@@ -93,7 +93,7 @@ function buildPayload() {
     }
     timetableObj[t.name] = segMap
     // divider 解析
-    dividerObj[t.name] = t.dividerInput.trim() === '' ? [] : t.dividerInput.split(',').map(x => Number(x.trim())).filter(x => Number.isNaN(x))
+    dividerObj[t.name] = t.dividerInput.trim() === '' ? [] : t.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
   }
   return {
     timetable: timetableObj,
