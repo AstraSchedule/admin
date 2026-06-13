@@ -172,7 +172,7 @@ useThemeVars();
                 v-else
                 status="418"
                 :title="hitokoto.content || '正在获取一言...'"
-                :description="hitokoto.from ? `—— ${hitokoto.from} ——` : ''"
+                :description="hitokoto.content ? (hitokoto.from ? `—— ${hitokoto.from} ——` : '') : '请求数据中...'"
             >
                 <template #footer>
                     <NButton @click="showHitokoto = false">返回</NButton>
