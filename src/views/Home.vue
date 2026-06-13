@@ -5,6 +5,8 @@ import {
   NCard,
   NDataTable,
   NFlex,
+  NResult,
+  NSpin,
   NStatistic,
   NTag,
   useThemeVars
@@ -15,6 +17,8 @@ import gsap from 'gsap';
 import {APISRV} from '../global.js'
 
 const isServerless = ref(false);
+const isInitialLoading = ref(true);
+const hitokoto = ref('');
 
 const columns = [
   {
@@ -53,6 +57,7 @@ const columns = [
   }
 ]
 const getStatistic = () => axios.get(`${APISRV}/web/statistic`);
+const getHitokoto = () => axios.get('https://v1.hitokoto.cn/');
 const statInfo = reactive(
     {
         "weather_error":0,
@@ -77,9 +82,15 @@ const { cancel } = useRequest(
           "clients_count": 0
       },
       onSuccess: (response) => {
+        isInitialLoading.value = false;
         if (response.data.serverless) {
           isServerless.value = true;
           cancel();
+          getHitokoto().then(response => {
+            hitokoto.value = response.data.hitokoto;
+          }).catch(() => {
+            hitokoto.value = '人生如逆旅，我亦是行人。';
+          });
           return;
         }
         let statMap = {};
@@ -130,7 +141,16 @@ useThemeVars();
 </script>
 
 <template>
-    <NFlex vertical v-if="!isServerless">
+    <NSpin v-if="isInitialLoading" size="large" description="加载中...">
+        <div style="height: 200px;"></div>
+    </NSpin>
+    <NResult
+        v-else-if="isServerless"
+        status="418"
+        title="Serverless 模式"
+        :description="hitokoto || '正在获取一言...'"
+    />
+    <NFlex v-else vertical>
         <NCard title="今日统计">
             <NFlex justify="center">
                 <NCard class="stat">
@@ -151,6 +171,5 @@ useThemeVars();
               :data="statTable"
             />
         </NCard>
-
     </NFlex>
 </template>
