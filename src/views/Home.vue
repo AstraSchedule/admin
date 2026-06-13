@@ -161,7 +161,7 @@ useThemeVars();
                 description="支持集控 · 自动调休 · 兼容 Windows 7"
             >
                 <template #icon>
-                    <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 100px; height: 100px;" />
+                    <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 80px; height: 80px;" />
                 </template>
                 <template #footer>
                     <NButton @click="showHitokoto = true; refreshHitokoto()">换一句</NButton>
