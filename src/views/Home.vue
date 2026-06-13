@@ -158,8 +158,8 @@ useThemeVars();
             <NResult
                 v-if="!showHitokoto"
                 status="418"
-                title="星程课表"
-                description="支持集控 · 自动调休 · 兼容 Windows 7"
+                title="星程课表 | AstraSchedule"
+                description="灵活部署 · 智能调休 · 集中管控 · 兼容 Windows 7"
             >
                 <template #icon>
                     <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 80px; height: 80px;" />
