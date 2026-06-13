@@ -18,7 +18,7 @@ import {APISRV} from '../global.js'
 
 const isServerless = ref(false);
 const isInitialLoading = ref(true);
-const hitokoto = ref('');
+const hitokoto = ref({ content: '', from: '' });
 const showHitokoto = ref(false);
 
 const columns = [
@@ -59,6 +59,13 @@ const columns = [
 ]
 const getStatistic = () => axios.get(`${APISRV}/web/statistic`);
 const getHitokoto = () => axios.get('https://v1.hitokoto.cn/');
+const refreshHitokoto = () => {
+    getHitokoto().then(response => {
+        hitokoto.value = { content: response.data.hitokoto, from: response.data.from || '' };
+    }).catch(() => {
+        hitokoto.value = { content: '人生如逆旅，我亦是行人。', from: '' };
+    });
+};
 const statInfo = reactive(
     {
         "weather_error":0,
@@ -88,9 +95,9 @@ const { cancel } = useRequest(
           isServerless.value = true;
           cancel();
           getHitokoto().then(response => {
-            hitokoto.value = response.data.hitokoto;
+            hitokoto.value = { content: response.data.hitokoto, from: response.data.from || '' };
           }).catch(() => {
-            hitokoto.value = '人生如逆旅，我亦是行人。';
+            hitokoto.value = { content: '人生如逆旅，我亦是行人。', from: '' };
           });
           return;
         }
@@ -157,14 +164,14 @@ useThemeVars();
                     <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 100px; height: 100px;" />
                 </template>
                 <template #footer>
-                    <NButton @click="showHitokoto = true">换一句</NButton>
+                    <NButton @click="showHitokoto = true; refreshHitokoto()">换一句</NButton>
                 </template>
             </NResult>
             <NResult
                 v-else
                 status="418"
-                title="一言"
-                :description="hitokoto || '正在获取一言...'"
+                :title="hitokoto.content || '正在获取一言...'"
+                :description="hitokoto.from ? `—— ${hitokoto.from}` : ''"
             >
                 <template #footer>
                     <NButton @click="showHitokoto = false">返回</NButton>
