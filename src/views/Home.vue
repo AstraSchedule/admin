@@ -14,6 +14,8 @@ import {computed, h, reactive, ref} from "vue";
 import gsap from 'gsap';
 import {APISRV} from '../global.js'
 
+const isServerless = ref(false);
+
 const columns = [
   {
       title: '班级',
@@ -63,7 +65,7 @@ const statInfo = reactive(
 
 let statTable = ref([]);
 // noinspection JSCheckFunctionSignatures
-useRequest(
+const { cancel } = useRequest(
     getStatistic,
     {
       pollingInterval: 1000,
@@ -75,6 +77,11 @@ useRequest(
           "clients_count": 0
       },
       onSuccess: (response) => {
+        if (response.data.serverless) {
+          isServerless.value = true;
+          cancel();
+          return;
+        }
         let statMap = {};
         statTable.value = []
         console.log(response.data);
@@ -123,7 +130,7 @@ useThemeVars();
 </script>
 
 <template>
-    <NFlex vertical>
+    <NFlex vertical v-if="!isServerless">
         <NCard title="今日统计">
             <NFlex justify="center">
                 <NCard class="stat">
