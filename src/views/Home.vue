@@ -142,54 +142,75 @@ useThemeVars();
 </script>
 
 <template>
-    <NFlex v-if="isInitialLoading" justify="center" align="center" style="min-height: 300px;">
-        <NSpin size="large" description="加载中..." />
-    </NFlex>
-    <NFlex v-else-if="isServerless" vertical justify="center" align="center" style="min-height: 300px;">
-        <NResult
-            v-if="!showHitokoto"
-            status="418"
-            title="星程课表"
-            description="支持集控 · 自动调休 · 兼容 Windows 7"
-        >
-            <template #icon>
-                <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 100px; height: 100px;" />
-            </template>
-            <template #footer>
-                <NButton @click="showHitokoto = true">换一句</NButton>
-            </template>
-        </NResult>
-        <NResult
-            v-else
-            status="418"
-            title="一言"
-            :description="hitokoto || '正在获取一言...'"
-        >
-            <template #footer>
-                <NButton @click="showHitokoto = false">返回</NButton>
-            </template>
-        </NResult>
-    </NFlex>
-    <NFlex v-else vertical>
-        <NCard title="今日统计">
-            <NFlex justify="center">
-                <NCard class="stat">
-                  <NStatistic label="天气上游 API 响应错误" :value="weatherError"/>
-                </NCard>
-                <NCard class="stat">
-                  <NStatistic label="WebSocket 异常断连" :value="wsDisconnect"/>
-                </NCard>
-                <NCard class="stat">
-                 <NStatistic label="正在连接的客户端数量" :value="clientsCount"/>
-                </NCard>
-            </NFlex>
-        </NCard>
-        <NCard title="各班详情">
-            <n-data-table
-              ref="dataTableInst"
-              :columns="columns"
-              :data="statTable"
-            />
-        </NCard>
-    </NFlex>
+    <div class="home-container">
+        <div v-if="isInitialLoading" class="centered">
+            <NSpin size="large" description="加载中..." />
+        </div>
+        <div v-else-if="isServerless" class="centered">
+            <NResult
+                v-if="!showHitokoto"
+                status="418"
+                title="星程课表"
+                description="支持集控 · 自动调休 · 兼容 Windows 7"
+            >
+                <template #icon>
+                    <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 100px; height: 100px;" />
+                </template>
+                <template #footer>
+                    <NButton @click="showHitokoto = true">换一句</NButton>
+                </template>
+            </NResult>
+            <NResult
+                v-else
+                status="418"
+                title="一言"
+                :description="hitokoto || '正在获取一言...'"
+            >
+                <template #footer>
+                    <NButton @click="showHitokoto = false">返回</NButton>
+                </template>
+            </NResult>
+        </div>
+        <div v-else class="content">
+            <NCard title="今日统计">
+                <NFlex justify="center">
+                    <NCard class="stat">
+                      <NStatistic label="天气上游 API 响应错误" :value="weatherError"/>
+                    </NCard>
+                    <NCard class="stat">
+                      <NStatistic label="WebSocket 异常断连" :value="wsDisconnect"/>
+                    </NCard>
+                    <NCard class="stat">
+                     <NStatistic label="正在连接的客户端数量" :value="clientsCount"/>
+                    </NCard>
+                </NFlex>
+            </NCard>
+            <NCard title="各班详情">
+                <n-data-table
+                  ref="dataTableInst"
+                  :columns="columns"
+                  :data="statTable"
+                />
+            </NCard>
+        </div>
+    </div>
 </template>
+
+<style scoped>
+.home-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.centered {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+</style>
