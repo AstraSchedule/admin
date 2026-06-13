@@ -60,6 +60,7 @@ const columns = [
 const getStatistic = () => axios.get(`${APISRV}/web/statistic`);
 const getHitokoto = () => axios.get('https://v1.hitokoto.cn/');
 const refreshHitokoto = () => {
+    hitokoto.value = { content: '', from: '' };
     getHitokoto().then(response => {
         hitokoto.value = { content: response.data.hitokoto, from: response.data.from || '' };
     }).catch(() => {
