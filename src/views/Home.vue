@@ -19,6 +19,7 @@ import {APISRV} from '../global.js'
 const isServerless = ref(false);
 const isInitialLoading = ref(true);
 const hitokoto = ref('');
+const showHitokoto = ref(false);
 
 const columns = [
   {
@@ -141,15 +142,34 @@ useThemeVars();
 </script>
 
 <template>
-    <NSpin v-if="isInitialLoading" size="large" description="加载中...">
-        <div style="height: 200px;"></div>
-    </NSpin>
-    <NResult
-        v-else-if="isServerless"
-        status="418"
-        title="Serverless 模式"
-        :description="hitokoto || '正在获取一言...'"
-    />
+    <NFlex v-if="isInitialLoading" justify="center" align="center" style="min-height: 300px;">
+        <NSpin size="large" description="加载中..." />
+    </NFlex>
+    <NFlex v-else-if="isServerless" vertical justify="center" align="center" style="min-height: 300px;">
+        <NResult
+            v-if="!showHitokoto"
+            status="418"
+            title="星程课表"
+            description="支持集控 · 自动调休 · 兼容 Windows 7"
+        >
+            <template #icon>
+                <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 100px; height: 100px;" />
+            </template>
+            <template #footer>
+                <NButton @click="showHitokoto = true">换一句</NButton>
+            </template>
+        </NResult>
+        <NResult
+            v-else
+            status="418"
+            title="一言"
+            :description="hitokoto || '正在获取一言...'"
+        >
+            <template #footer>
+                <NButton @click="showHitokoto = false">返回</NButton>
+            </template>
+        </NResult>
+    </NFlex>
     <NFlex v-else vertical>
         <NCard title="今日统计">
             <NFlex justify="center">
