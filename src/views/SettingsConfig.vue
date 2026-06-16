@@ -1,7 +1,7 @@
 <script setup>
 import {
   NForm, NFormItem, NInput, NButton, NFlex, NCode, NCard, NStatistic, NModal, NSpace,
-  NSwitch, NDatePicker, useMessage, NText, NColorPicker, NInputNumber
+  NSwitch, NDatePicker, useMessage, NText, NColorPicker, NInputNumber, NSelect
 } from 'naive-ui'
 import { reactive, ref, computed } from 'vue'
 import axios from 'axios'
@@ -35,7 +35,8 @@ const dynamicForm = reactive({
   temperature_colors: {
     use_gradient: false,
     stops: []
-  }
+  },
+  startup_behavior: 'normal'
 })
 
 function pad(n){return n.toString().padStart(2,'0')}
@@ -60,7 +61,8 @@ function buildPayload(){
     temperature_colors: {
       use_gradient: dynamicForm.temperature_colors.use_gradient,
       stops: dynamicForm.temperature_colors.stops.map(s => ({ temp: s.temp, color: s.color }))
-    }
+    },
+    startup_behavior: dynamicForm.startup_behavior
   }
 }
 
@@ -120,11 +122,11 @@ useRequest(getSettings,{
     countdown_target:'hidden',
     week_display:true,
     banner_text:'',
-    // 新增字段默认值，便于后端缺省兼容
     weather_alert_override:false,
     weather_alert_brief:false,
     css_style:{},
-    temperature_colors:{ use_gradient:false, stops:[] }
+    temperature_colors:{ use_gradient:false, stops:[] },
+    startup_behavior:'normal'
   },
   onSuccess:(resp)=>{
     const data = resp.data
@@ -158,7 +160,6 @@ useRequest(getSettings,{
       }))
     }
     if(!dynamicForm.temperature_colors.stops || dynamicForm.temperature_colors.stops.length===0){
-      // 默认端点
       dynamicForm.temperature_colors.stops = [
         { temp: 20, color: '#66CCFF' },
         { temp: 30, color: '#5FBC21' },
@@ -166,6 +167,7 @@ useRequest(getSettings,{
         { temp: 100, color: '#EE0000' }
       ]
     }
+    dynamicForm.startup_behavior = data.startup_behavior || 'normal'
   }
 })
 
@@ -245,6 +247,21 @@ const preview = computed(()=> JSON.stringify(buildPayload(), null, 2))
               </NCard>
               <NButton dashed type="primary" @click="addStop">+ 添加温度端点</NButton>
             </NSpace>
+          </NCard>
+          <NCard size="small" title="启动行为">
+            <n-form-item label="应用启动时的行为">
+              <NSelect
+                v-model:value="dynamicForm.startup_behavior"
+                :options="[
+                  { label: '正常 - 启动后正常显示界面', value: 'normal' },
+                  { label: '滞留 - 启动后不显示界面，后台运行', value: 'stay' },
+                  { label: '退出 - 启动后直接退出', value: 'exit' }
+                ]"
+              />
+            </n-form-item>
+            <NText depth="3" style="font-size: 12px;">
+              需要客户端开启"云端连接"才会生效。滞留模式下客户端仍会后台获取课表、检查更新等。
+            </NText>
           </NCard>
           <NCard size="small" title="CSS 变量样式 (key / value)">
             <NSpace vertical>
