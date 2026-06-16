@@ -106,30 +106,26 @@ const messages = useMessage();
 
 function onPwdConfirm(password) {
     pwdModalLoading.value = true
-    useRequest(
-        () => putSchedule(password),
-        {
-            onSuccess: (response) => {
-                console.log(response.data)
-                console.log(response.status)
-                messages.success("服务端说行")
-                showModal.value = false
-            },
-            onError: (error) => {
-                console.log(error)
-                if (error.status === 401) {
-                    messages.error("你寻思寻思这密码它对吗？")
-                } else if (error.status === 400) {
-                    messages.error("码姿不对，删了重写！（服务端校验不通过）")
-                } else {
-                    messages.error(`服务端看完天塌了（状态码：${error}）`)
-                }
-            },
-            onFinally: () => {
-                pwdModalLoading.value = false
+    putSchedule(password)
+        .then((response) => {
+            console.log(response.data)
+            console.log(response.status)
+            messages.success("服务端说行")
+            showModal.value = false
+        })
+        .catch((error) => {
+            console.log(error)
+            if (error.status === 401) {
+                messages.error("你寻思寻思这密码它对吗？")
+            } else if (error.status === 400) {
+                messages.error("码姿不对，删了重写！（服务端校验不通过）")
+            } else {
+                messages.error(`服务端看完天塌了（状态码：${error}）`)
             }
-        }
-    );
+        })
+        .finally(() => {
+            pwdModalLoading.value = false
+        })
 }
 
 const getSchedule = () => {
