@@ -3,6 +3,8 @@ import {
   NButton,
   NCard,
   NCheckbox,
+  NCollapse,
+  NCollapseItem,
   NCode,
   NDataTable,
   NDatePicker,
@@ -250,8 +252,8 @@ useRequest(
         if (b.name === '常日') return 1
         return 0
       })
-      // 默认全部收起
-      collapsedTimetables.value = dynamicForm.timetables.map((_, i) => i)
+      // 默认全部收起（expandedTimetables 为空即全部收起）
+      expandedTimetables.value = []
       if (dynamicForm.timetables.length === 0) {
         dynamicForm.timetables.push({ name: '常日', segments: [], dividerInput: '' })
       }
@@ -263,15 +265,7 @@ useRequest(
 const preview = computed(() => JSON.stringify(buildPayload(), null, 2))
 
 // ---------- 收起/展开 ----------
-const collapsedTimetables = ref([])
-function toggleCollapse(tIdx) {
-  const idx = collapsedTimetables.value.indexOf(tIdx)
-  if (idx >= 0) {
-    collapsedTimetables.value.splice(idx, 1)
-  } else {
-    collapsedTimetables.value.push(tIdx)
-  }
-}
+const expandedTimetables = ref([])
 
 // ---------- 自动填充与校验 ----------
 function normalizeTimetable(timetable, silent=false){
@@ -533,37 +527,32 @@ function getSegmentColumns(tIdx) {
         </n-form-item>
       </n-form>
 
-      <div v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" class="timetable-block">
-        <div class="timetable-header">
-          <div class="timetable-title">
-            <NButton text size="small" @click="toggleCollapse(tIdx)">
-              {{ collapsedTimetables.includes(tIdx) ? '▶' : '▼' }}
-            </NButton>
-            <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" />
-            <span class="segment-count">{{ tb.segments.length }} 段</span>
-          </div>
-          <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
-            删除此作息
+      <NCollapse v-model:expanded-names="expandedTimetables" accordion>
+        <NCollapseItem v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" :name="tIdx">
+          <template #header>
+            <div class="collapse-header">
+              <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" @click.stop />
+              <span class="segment-count">{{ tb.segments.length }} 段</span>
+              <NButton size="small" type="error" text @click.stop="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
+                删除
+              </NButton>
+            </div>
+          </template>
+
+          <NDataTable
+            :columns="getSegmentColumns(tIdx)"
+            :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
+            :bordered="true"
+            :single-line="false"
+            size="small"
+            class="segment-table"
+          />
+
+          <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
+            + 增加时间段
           </NButton>
-        </div>
-
-        <Transition name="collapse">
-          <div v-show="!collapsedTimetables.includes(tIdx)">
-            <NDataTable
-              :columns="getSegmentColumns(tIdx)"
-              :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
-              :bordered="true"
-              :single-line="false"
-              size="small"
-              class="segment-table"
-            />
-
-            <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
-              + 增加时间段
-            </NButton>
-          </div>
-        </Transition>
-      </div>
+        </NCollapseItem>
+      </NCollapse>
 
       <NButton type="primary" dashed @click="addTimetable" style="margin-top: 16px;">
         + 增加作息模板
@@ -591,31 +580,17 @@ function getSegmentColumns(tIdx) {
 </template>
 
 <style scoped>
-.timetable-block {
-    margin-bottom: 24px;
-    padding: 16px;
-    border: 1px solid var(--n-border-color, #e0e0e6);
-    border-radius: 8px;
-}
-
-.timetable-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.timetable-title {
+.collapse-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
 }
 
 .segment-count {
     font-size: 12px;
     opacity: 0.5;
+    margin-left: 8px;
 }
 
 .segment-table {
