@@ -523,7 +523,7 @@ function getSegmentColumns(tIdx) {
       <div v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" class="timetable-block">
         <div class="timetable-header">
           <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" />
-          <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1">
+          <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
             删除此作息
           </NButton>
         </div>
