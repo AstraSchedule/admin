@@ -1,5 +1,5 @@
 <script setup>
-import { NButton } from 'naive-ui'
+import { NResult, NButton } from 'naive-ui'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -9,17 +9,17 @@ document.title = "404 - 一片荒无人烟的地方，像是异世界"
 <template>
   <div class="not-found">
     <div class="not-found-content">
-      <div class="error-emoji">🤔</div>
-      <h1 class="error-title">404 资源不存在</h1>
-      <p class="error-desc">生活总归带点荒谬</p>
-      <div class="error-divider"></div>
-      <p class="error-contact">
-        遇到问题？联系
-        <a href="mailto:kuohu@getastra.cn">kuohu@getastra.cn</a>
-      </p>
-      <n-button type="primary" size="large" @click="router.push('/')">
-        返回首页
-      </n-button>
+      <n-result status="404" title="404 资源不存在" description="生活总归带点荒谬">
+        <template #footer>
+          <div class="error-contact">
+            遇到问题？联系
+            <a href="mailto:kuohu@getastra.cn">kuohu@getastra.cn</a>
+          </div>
+          <n-button type="primary" size="large" @click="router.push('/')">
+            返回首页
+          </n-button>
+        </template>
+      </n-result>
     </div>
   </div>
 </template>
@@ -35,39 +35,12 @@ document.title = "404 - 一片荒无人烟的地方，像是异世界"
 
 .not-found-content {
     text-align: center;
-    max-width: 400px;
-}
-
-.error-emoji {
-    font-size: 72px;
-    line-height: 1;
-    margin-bottom: 16px;
-}
-
-.error-title {
-    font-size: 24px;
-    font-weight: 600;
-    margin: 0 0 8px;
-}
-
-.error-desc {
-    font-size: 14px;
-    opacity: 0.6;
-    margin: 0 0 24px;
-}
-
-.error-divider {
-    width: 40px;
-    height: 2px;
-    background: currentColor;
-    opacity: 0.2;
-    margin: 0 auto 24px;
 }
 
 .error-contact {
     font-size: 13px;
     opacity: 0.5;
-    margin: 0 0 24px;
+    margin-bottom: 16px;
 }
 
 .error-contact a {
