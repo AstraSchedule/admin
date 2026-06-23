@@ -1,5 +1,5 @@
 <script setup>
-import {NButton, NCard, NCode, NFlex, NForm, NFormItem, NInput, NSpace, NStatistic, useMessage} from "naive-ui";
+import {NButton, NCard, NCode, NFlex, NForm, NFormItem, NInput, NPopconfirm, NSpace, NStatistic, useMessage} from "naive-ui";
 import {computed, reactive, ref} from "vue";
 import {zip} from "@/utils.js";
 import axios from "axios";
@@ -138,9 +138,12 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
                           }"
                         >
                           <n-input v-model:value="item[1].text" clearable />
-                          <n-button style="margin-left: 12px" @click="removeItem(index)">
-                            删除
-                          </n-button>
+                          <n-popconfirm @positive-click="removeItem(index)" negative-text="取消" positive-text="确认">
+                            <template #trigger>
+                              <n-button style="margin-left: 12px">删除</n-button>
+                            </template>
+                            确认删除此课程？
+                          </n-popconfirm>
                         </n-form-item>
                     </n-flex>
                 </n-form-item>

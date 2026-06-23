@@ -1,6 +1,6 @@
 <script setup>
 import {
-  NForm, NFormItem, NInput, NButton, NFlex, NCode, NCard, NStatistic, NModal, NSpace,
+  NForm, NFormItem, NInput, NButton, NFlex, NCode, NCard, NStatistic, NModal, NPopconfirm, NSpace,
   NSwitch, NDatePicker, useMessage, NText, NColorPicker, NInputNumber, NSelect
 } from 'naive-ui'
 import { reactive, ref, computed } from 'vue'
@@ -241,7 +241,12 @@ const preview = computed(()=> JSON.stringify(buildPayload(), null, 2))
                   <n-form-item label="对应颜色">
                     <NColorPicker v-model:value="stop.color" :show-alpha="false" :modes="['hex']" />
                   </n-form-item>
-                  <NButton tertiary type="error" @click="removeStop(index)" v-if="dynamicForm.temperature_colors.stops.length > 1">删除此端点</NButton>
+                  <n-popconfirm @positive-click="removeStop(index)" negative-text="取消" positive-text="确认" v-if="dynamicForm.temperature_colors.stops.length > 1">
+                    <template #trigger>
+                      <NButton tertiary type="error">删除此端点</NButton>
+                    </template>
+                    确认删除此端点？
+                  </n-popconfirm>
                 </NSpace>
               </NCard>
               <NButton dashed type="primary" @click="addStop">+ 添加温度端点</NButton>
@@ -272,7 +277,12 @@ const preview = computed(()=> JSON.stringify(buildPayload(), null, 2))
                   <n-form-item :label="'变量值'" :path="`css_style[${index}].value`">
                     <NInput v-model:value="item.value" placeholder="30px" />
                   </n-form-item>
-                  <NButton tertiary type="error" @click="removeCssItem(index)" v-if="dynamicForm.css_style.length>1">删除此项</NButton>
+                  <n-popconfirm @positive-click="removeCssItem(index)" negative-text="取消" positive-text="确认" v-if="dynamicForm.css_style.length>1">
+                    <template #trigger>
+                      <NButton tertiary type="error">删除此项</NButton>
+                    </template>
+                    确认删除此变量？
+                  </n-popconfirm>
                 </NSpace>
               </NCard>
               <NButton dashed type="primary" @click="addCssItem">+ 增加变量</NButton>

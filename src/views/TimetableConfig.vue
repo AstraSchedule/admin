@@ -501,7 +501,9 @@ function getSegmentColumns(tIdx) {
               default: () => '在下方插入'
             }),
             h(NPopconfirm, {
-              onPositiveClick: () => removeSegment(tb, row._idx)
+              onPositiveClick: () => removeSegment(tb, row._idx),
+              negativeText: '取消',
+              positiveText: '确认'
             }, {
               trigger: () => h(NButton, { size: 'large', text: true, type: 'error' }, { default: () => '删除' }),
               default: () => '确认删除此段？'
@@ -540,9 +542,17 @@ function getSegmentColumns(tIdx) {
             <div class="collapse-header">
               <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 200px;" @click.stop />
               <span class="segment-count">{{ tb.segments.length }} 段</span>
-              <NButton size="small" type="error" text @click.stop="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
-                删除
-              </NButton>
+              <NPopconfirm
+                v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'"
+                @positive-click="removeTimetable(tIdx)"
+                negative-text="取消"
+                positive-text="确认"
+              >
+                <template #trigger>
+                  <NButton size="small" type="error" text @click.stop>删除</NButton>
+                </template>
+                确认删除此作息模板？
+              </NPopconfirm>
             </div>
           </template>
 
