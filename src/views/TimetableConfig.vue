@@ -19,6 +19,7 @@ import {
   NRadioGroup,
   NSpace,
   NStatistic,
+  NTooltip,
   useMessage
 } from 'naive-ui'
 import {computed, h, reactive, ref} from 'vue'
@@ -491,8 +492,14 @@ function getSegmentColumns(tIdx) {
       render(row) {
         return h(NSpace, { justify: 'center', size: 4 }, {
           default: () => [
-            h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
-            h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
+            h(NTooltip, null, {
+              trigger: () => h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
+              default: () => '在上方插入'
+            }),
+            h(NTooltip, null, {
+              trigger: () => h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
+              default: () => '在下方插入'
+            }),
             h(NPopconfirm, {
               onPositiveClick: () => removeSegment(tb, row._idx)
             }, {
