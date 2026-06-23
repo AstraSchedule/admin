@@ -69,7 +69,22 @@ function renderStatus(status) {
 }
 
 const columns = [
-  {type: 'expand', expandable: (row) => row.schedules && row.schedules.length > 0},
+  {
+    type: 'expand',
+    expandable: (row) => row.schedules && row.schedules.length > 0,
+    renderExpand: (row) => {
+      return h('div', {style: 'padding: 8px 16px;'}, [
+        ...(row.schedules || []).map((sch, idx) =>
+          h('div', {key: idx, style: 'padding: 6px 0; display: flex; align-items: center; gap: 12px;'}, [
+            h(NTag, {size: 'small', bordered: false}, {default: () => sch.name}),
+            h('span', {style: 'font-size: 13px; opacity: 0.7;'}, sch.date),
+            h(NTag, {size: 'small', bordered: false, type: 'info'}, {default: () => `P${sch.priority ?? 0}`}),
+            renderStatus(sch.status)
+          ])
+        )
+      ])
+    }
+  },
   {title: '唯一ID', key: 'id', ellipsis: {tooltip: true}},
   {title: '生效域', key: 'scope', render: (row) => h(ScopeTags, {scopes: row.scope})},
   {
