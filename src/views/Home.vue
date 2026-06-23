@@ -163,7 +163,7 @@ useThemeVars();
                 v-if="!showHitokoto"
                 status="418"
                 title="星程课表 | AstraSchedule"
-                description="灵活部署 · 智能调休 · 集中管控 · 兼容 Windows 7"
+                description="星辰落旧室，星程起新程"
             >
                 <template #icon>
                     <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 80px; height: 80px;" />
