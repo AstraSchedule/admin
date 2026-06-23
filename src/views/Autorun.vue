@@ -146,3 +146,18 @@ function goAdd() {
     />
   </n-card>
 </template>
+
+<style scoped>
+:deep(.n-data-table) {
+    border-radius: var(--radius-md);
+}
+
+:deep(.n-data-table th) {
+    font-weight: 600;
+    background: var(--bg-page);
+}
+
+:deep(.n-data-table td) {
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+</style>

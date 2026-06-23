@@ -152,7 +152,11 @@ useThemeVars();
 <template>
     <div class="home-container">
         <div v-if="isInitialLoading" class="centered">
-            <NSpin size="large" description="加载中..." />
+            <n-spin size="large">
+                <div style="padding: 50px; text-align: center; color: var(--text-tertiary);">
+                    正在获取数据...
+                </div>
+            </n-spin>
         </div>
         <div v-else-if="isServerless" class="centered">
             <NResult
