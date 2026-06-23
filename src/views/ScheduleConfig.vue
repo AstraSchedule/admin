@@ -49,9 +49,16 @@ function submit() {
 async function onPwdConfirm(password) {
   saving.value = true
   try {
+    // 提交时将 classList 转换回嵌套数组格式 [["物"], ["数"]]
+    const payload = {
+      daily_class: dynamicForm.daily_class.map(day => ({
+        ...day,
+        classList: (day.classList || []).map(item => [item])
+      }))
+    }
     await axios.put(
       `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`,
-      dynamicForm,
+      payload,
       { auth: { username: 'ElectronClassSchedule', password } }
     )
     const messages = useMessage();
@@ -75,7 +82,14 @@ useRequest(getSchedule, {
   refreshDeps: [school, grade, cls],
   initialData: { daily_class: dynamicForm.daily_class },
   onSuccess: (response) => {
-    dynamicForm.daily_class = response.data['daily_class'];
+    // API 返回 classList 为 [["物"], ["数"]]，需要展平为 ["物", "数"]
+    const daily = response.data['daily_class'] || []
+    for (const day of daily) {
+      if (Array.isArray(day.classList)) {
+        day.classList = day.classList.map(item => Array.isArray(item) ? item[0] : item)
+      }
+    }
+    dynamicForm.daily_class = daily
     dataLoaded.value = true
   }
 });
