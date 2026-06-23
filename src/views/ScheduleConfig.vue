@@ -390,16 +390,12 @@ function setSlotValue(dayIdx, periodIdx, val) {
   white-space: nowrap;
 }
 
-.schedule-table th {
+.schedule-table th,
+.timetable-row td {
   font-weight: 600;
-  background: var(--n-card-color, #fafafa);
   position: sticky;
   top: 0;
   z-index: 1;
-}
-
-.timetable-row td {
-  background: var(--n-card-color, #fafafa);
 }
 
 .row-label {
