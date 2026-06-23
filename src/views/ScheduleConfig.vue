@@ -3,19 +3,15 @@ import {
   NButton,
   NCard,
   NCode,
-  NCollapse,
-  NCollapseItem,
+  NDataTable,
   NFlex,
-  NForm,
-  NFormItem,
-  NInput,
   NSelect,
   NSpace,
   NStatistic,
   useMessage
 } from "naive-ui";
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue';
-import {computed, reactive, ref} from "vue";
+import {computed, h, reactive, ref} from "vue";
 import axios from "axios";
 import {APISRV} from "@/global.js";
 import {useRequest} from "vue-request";
@@ -25,320 +21,215 @@ const route = useRoute();
 const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 let optionsLst = ref([])
 let subjectsOptionsLst = ref([])
-let optionsDataLoaded = ref(false);
-let subjectsOptionsDataLoaded = ref(false);
-let scheduleDataLoaded = ref(false);
 const school = computed(() => route.params.school);
 const grade = computed(() => route.params.grade);
 const cls = computed(() => route.params.cls);
-const formRef = ref(null);
 let needs = {}
 
 const dynamicForm = reactive({
-  "daily_class":[
-    {
-      "Chinese":"日",
-      "English":"SUN",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"一",
-      "English":"MON",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"二",
-      "English":"TUE",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"三",
-      "English":"WED",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"四",
-      "English":"THR",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"五",
-      "English":"FRI",
-      "classList":[],
-      "timetable":"常日"
-    },
-    {
-      "Chinese":"六",
-      "English":"SAT",
-      "classList":[],
-      "timetable":"常日"
-    }
+  daily_class: [
+    {Chinese:"日",English:"SUN",classList:[],timetable:"常日"},
+    {Chinese:"一",English:"MON",classList:[],timetable:"常日"},
+    {Chinese:"二",English:"TUE",classList:[],timetable:"常日"},
+    {Chinese:"三",English:"WED",classList:[],timetable:"常日"},
+    {Chinese:"四",English:"THR",classList:[],timetable:"常日"},
+    {Chinese:"五",English:"FRI",classList:[],timetable:"常日"},
+    {Chinese:"六",English:"SAT",classList:[],timetable:"常日"}
   ]
 });
 
-let showModal = ref(false);
-let pwdModalLoading = ref(false);
+const showModal = ref(false);
+const saving = ref(false);
 
 function submit() {
-    showModal.value = true;
+  showModal.value = true;
 }
 
-const putSchedule = (password) => {
-    return Promise.resolve(
-        axios.put(
-            `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`,
-            dynamicForm,
-            {
-                auth: {
-                    username: 'ElectronClassSchedule',
-                    password: password
-                }
-            }
-        )
-    );
-}
-const messages = useMessage();
-
-function onPwdConfirm(password) {
-    pwdModalLoading.value = true
-    putSchedule(password)
-        .then((response) => {
-            console.log(response.data)
-            console.log(response.status)
-            messages.success("服务端说行")
-            showModal.value = false
-        })
-        .catch((error) => {
-            console.log(error)
-            if (error.status === 401) {
-                messages.error("你寻思寻思这密码它对吗？")
-            } else if (error.status === 400) {
-                messages.error("码姿不对，删了重写！（服务端校验不通过）")
-            } else {
-                messages.error(`服务端看完天塌了（状态码：${error}）`)
-            }
-        })
-        .finally(() => {
-            pwdModalLoading.value = false
-        })
+async function onPwdConfirm(password) {
+  saving.value = true
+  try {
+    await axios.put(
+      `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`,
+      dynamicForm,
+      { auth: { username: 'ElectronClassSchedule', password } }
+    )
+    const messages = useMessage();
+    messages.success("服务端说行")
+    showModal.value = false
+  } catch (error) {
+    const messages = useMessage();
+    if (error.status === 401) messages.error("你寻思寻思这密码它对吗？")
+    else if (error.status === 400) messages.error("码姿不对，删了重写！（服务端校验不通过）")
+    else messages.error(`服务端看完天塌了（状态码：${error}）`)
+  } finally {
+    saving.value = false
+  }
 }
 
-const getSchedule = () => {
-  return Promise.resolve(axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`));
-}
+const getSchedule = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`);
+const getOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/timetable/options`);
+const getSubjectsOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/subjects/options`);
 
-const getOptions = () => {
-  return Promise.resolve(axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/timetable/options`));
-}
+const dataLoaded = ref(false);
 
-const getSubjectsOptions = () => {
-  return Promise.resolve(axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/subjects/options`));
-}
+useRequest(getSchedule, {
+  refreshDeps: [school, grade, cls],
+  initialData: { daily_class: dynamicForm.daily_class },
+  onSuccess: (response) => {
+    dynamicForm.daily_class = response.data['daily_class'];
+    dataLoaded.value = true
+  }
+});
 
-useRequest(
-    getSchedule,
-    {
-      refreshDeps: [school, grade, cls],
-      initialData: {
-          "daily_class":[
-            {
-              "Chinese":"日",
-              "English":"SUN",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"一",
-              "English":"MON",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"二",
-              "English":"TUE",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"三",
-              "English":"WED",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"四",
-              "English":"THR",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"五",
-              "English":"FRI",
-              "classList":[],
-              "timetable":"常日"
-            },
-            {
-              "Chinese":"六",
-              "English":"SAT",
-              "classList":[],
-              "timetable":"常日"
-            }
-          ]
-        },
-      onSuccess: (response) => {
-          console.log(response.data);
-          dynamicForm.daily_class = response.data['daily_class'];
-          scheduleDataLoaded.value = true
-      }
+useRequest(getOptions, {
+  refreshDeps: [school, grade, cls],
+  initialData: { options: [] },
+  onSuccess: (response) => {
+    optionsLst.value = []
+    for (const datumElement of response.data['options']) {
+      optionsLst.value.push({ label: datumElement['label'], value: datumElement['value'] })
+      needs[datumElement['label']] = datumElement['need']
     }
-);
+  }
+});
 
-useRequest(
-    getOptions,
+useRequest(getSubjectsOptions, {
+  refreshDeps: [school, grade, cls],
+  initialData: { options: [] },
+  onSuccess: (response) => {
+    subjectsOptionsLst.value = []
+    for (const datumElement of response.data['options']) {
+      subjectsOptionsLst.value.push({ label: datumElement['label'], value: datumElement['value'] })
+    }
+  }
+});
+
+// 计算最大节数
+const maxPeriods = computed(() => {
+  let max = 0
+  for (const day of dynamicForm.daily_class) {
+    const n = needs[day.timetable] || 0
+    if (n > max) max = n
+  }
+  return max
+})
+
+function getColumns() {
+  const cols = [
     {
-      refreshDeps: [school, grade, cls],
-      initialData: {
-          'options': []
-      },
-      onSuccess: (response) => {
-          console.log(response.data);
-          optionsLst.value = []
-          for (let datumElement of response.data['options']) {
-              optionsLst.value.push(
-                  {
-                      label: datumElement['label'],
-                      value: datumElement['value']
-                  }
-              )
-              needs[datumElement['label']] = datumElement['need']
+      title: '星期',
+      key: 'day',
+      width: 80,
+      fixed: 'left',
+      render(row) {
+        return h('strong', row.Chinese)
+      }
+    },
+    {
+      title: '作息表',
+      key: 'timetable',
+      width: 140,
+      fixed: 'left',
+      render(row, index) {
+        return h(NSelect, {
+          value: row.timetable,
+          options: optionsLst.value,
+          size: 'small',
+          placeholder: '选择作息表',
+          onUpdateValue(val) {
+            row.timetable = val
+            // 重新计算 classList 长度
+            const need = needs[val] || 0
+            const old = row.classList || []
+            row.classList = Array.from({length: need}, (_, i) => old[i] || '')
           }
-          optionsDataLoaded.value = true;
+        })
       }
     }
-);
+  ]
 
-useRequest(
-    getSubjectsOptions,
-    {
-      refreshDeps: [school, grade, cls],
-      initialData: {
-          'options': []
-      },
-      onSuccess: (response) => {
-          console.log(response.data);
-          subjectsOptionsLst.value = []
-          for (let datumElement of response.data['options']) {
-              subjectsOptionsLst.value.push(
-                  {
-                      label: datumElement['label'],
-                      value: datumElement['value']
-                  }
-              )
+  // 动态生成节次列
+  for (let i = 0; i < maxPeriods.value; i++) {
+    const periodIdx = i
+    cols.push({
+      title: `第${i + 1}节`,
+      key: `period_${i}`,
+      width: 120,
+      render(row, index) {
+        const need = needs[row.timetable] || 0
+        if (periodIdx >= need) return h('span', {style: 'opacity: 0.3;'}, '-')
+        const val = (row.classList || [])[periodIdx] || null
+        return h(NSelect, {
+          value: val,
+          options: subjectsOptionsLst.value,
+          size: 'small',
+          placeholder: '选科目',
+          onUpdateValue(val) {
+            row.classList[periodIdx] = val
           }
-          subjectsOptionsDataLoaded.value = true;
+        })
       }
-    }
-);
+    })
+  }
 
-const expandedDays = ref([0]);
-function expandAllDays(){ expandedDays.value = week.map((_,i)=>i); }
-function collapseAllDays(){ expandedDays.value = []; }
+  return cols
+}
 
 const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
 </script>
 
 <template>
-    <NFlex vertical>
-        <NCard title="所选信息">
-            <NFlex justify="center">
-                <NCard class="stat">
-                  <NStatistic label="所选学校" v-bind:value="school.toString()"/>
-                </NCard>
-                <NCard class="stat">
-                  <NStatistic label="所选年级" v-bind:value="grade.toString()"/>
-                </NCard>
-                <NCard class="stat">
-                  <NStatistic label="所选班级" v-bind:value="cls.toString()"/>
-                </NCard>
-            </NFlex>
+  <NFlex vertical>
+    <NCard title="所选信息">
+      <NFlex justify="center">
+        <NCard class="stat">
+          <NStatistic label="所选学校" :value="school.toString()"/>
         </NCard>
-        <NCard title="配置表单">
-            <n-form ref="formRef" :model="dynamicForm" class="center" v-if="scheduleDataLoaded && optionsDataLoaded && subjectsOptionsDataLoaded">
-                <n-space vertical>
-                  <n-space>
-                    <n-button size="small" @click="expandAllDays">全部展开</n-button>
-                    <n-button size="small" @click="collapseAllDays">全部折叠</n-button>
-                  </n-space>
-                  <n-collapse multiple v-model:expanded-names="expandedDays">
-                    <n-collapse-item v-for="(item, index) in week" :name="index" :key="index" :title="item">
-                      <n-space vertical>
-                        <NCard title="课程安排" size="small">
-                          <n-form-item
-                              v-for="(iten) in Array(needs[dynamicForm.daily_class[index]['timetable']] + 1).keys()"
-                              :key="iten"
-                              :label="`第 ${iten + 1} 节课`"
-                              :path="`daily_class[${index}]['classList'][${iten}]`"
-                              :rule="{ required: true }"
-                          >
-                              <n-space justify="space-around" size="large">
-                                <!--suppress JSUnusedLocalSymbols -->
-                                <n-select
-                                    placeholder="选一个吧"
-                                    :options="subjectsOptionsLst"
-                                    v-for="(_, indez) in dynamicForm.daily_class[index]['classList'][iten]"
-                                    v-model:value="dynamicForm.daily_class[index]['classList'][iten][indez]"
-                                />
-                              </n-space>
-                           </n-form-item>
-                        </NCard>
-                        <n-form-item
-                            :key="index"
-                            :label="`${item} 所用作息表`"
-                            :path="`daily_class[${index}]['timetable']`"
-                            :rule="{ required: true }"
-                        >
-                            <n-select
-                              placeholder="选一个吧"
-                              :options="optionsLst"
-                              v-model:value="dynamicForm.daily_class[index]['timetable']"
-                            />
-                        </n-form-item>
-                      </n-space>
-                    </n-collapse-item>
-                  </n-collapse>
-                </n-space>
-                <n-form-item class="center">
-                  <n-flex justify="center" size="large" class="center">
-                    <n-button attr-type="button" @click="submit">提交</n-button>
-                  </n-flex>
-                </n-form-item>
-            </n-form>
+        <NCard class="stat">
+          <NStatistic label="所选年级" :value="grade.toString()"/>
         </NCard>
-        <NCard title="提交前预览">
-          <n-code :code="previewCode" language="json" show-line-numbers/>
+        <NCard class="stat">
+          <NStatistic label="所选班级" :value="cls.toString()"/>
         </NCard>
+      </NFlex>
+    </NCard>
 
-        <ConfirmPasswordModal
-            v-model:show="showModal"
-            :loading="pwdModalLoading"
-            confirm-text="确认提交"
-            @confirm="onPwdConfirm"
-        />
-    </NFlex>
+    <NCard title="课表配置">
+      <NDataTable
+        v-if="dataLoaded"
+        :columns="getColumns()"
+        :data="dynamicForm.daily_class"
+        :bordered="true"
+        :single-line="false"
+        size="small"
+        :scroll-x="800"
+      />
+      <div v-else style="text-align: center; padding: 40px; opacity: 0.5;">加载中...</div>
+
+      <div class="submit-area">
+        <n-button type="primary" @click="submit">提交</n-button>
+      </div>
+    </NCard>
+
+    <NCard title="提交前预览">
+      <n-code :code="previewCode" language="json" show-line-numbers/>
+    </NCard>
+
+    <ConfirmPasswordModal
+      v-model:show="showModal"
+      :loading="saving"
+      confirm-text="确认提交"
+      @confirm="onPwdConfirm"
+    />
+  </NFlex>
 </template>
 
 <style scoped>
-:deep(.n-collapse-item__header) {
-    font-weight: 500;
-}
-
-.center {
-    max-width: 800px;
-    margin: 0 auto;
+.submit-area {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--n-border-color, #e0e0e6);
 }
 </style>
