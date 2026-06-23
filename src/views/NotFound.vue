@@ -9,9 +9,9 @@ document.title = "404 - 一片荒无人烟的地方，像是异世界"
 <template>
   <div class="not-found">
     <div class="not-found-content">
-      <div class="error-code">404</div>
-      <h1 class="error-title">页面走丢了</h1>
-      <p class="error-desc">生活总归带点荒谬，这个页面大概也是</p>
+      <div class="error-emoji">🤔</div>
+      <h1 class="error-title">404 资源不存在</h1>
+      <p class="error-desc">生活总归带点荒谬</p>
       <div class="error-divider"></div>
       <p class="error-contact">
         遇到问题？联系
@@ -38,13 +38,10 @@ document.title = "404 - 一片荒无人烟的地方，像是异世界"
     max-width: 400px;
 }
 
-.error-code {
-    font-size: 96px;
-    font-weight: 700;
+.error-emoji {
+    font-size: 72px;
     line-height: 1;
-    opacity: 0.15;
-    margin-bottom: -20px;
-    user-select: none;
+    margin-bottom: 16px;
 }
 
 .error-title {
