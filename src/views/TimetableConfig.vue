@@ -547,20 +547,22 @@ function getSegmentColumns(tIdx) {
           </NButton>
         </div>
 
-        <div v-show="!collapsedTimetables.includes(tIdx)">
-          <NDataTable
-            :columns="getSegmentColumns(tIdx)"
-            :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
-            :bordered="true"
-            :single-line="false"
-            size="small"
-            class="segment-table"
-          />
+        <Transition name="collapse">
+          <div v-show="!collapsedTimetables.includes(tIdx)">
+            <NDataTable
+              :columns="getSegmentColumns(tIdx)"
+              :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
+              :bordered="true"
+              :single-line="false"
+              size="small"
+              class="segment-table"
+            />
 
-          <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
-            + 增加时间段
-          </NButton>
-        </div>
+            <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
+              + 增加时间段
+            </NButton>
+          </div>
+        </Transition>
       </div>
 
       <NButton type="primary" dashed @click="addTimetable" style="margin-top: 16px;">
@@ -626,5 +628,24 @@ function getSegmentColumns(tIdx) {
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid var(--n-border-color, #e0e0e6);
+}
+
+/* 收起/展开过渡动画 */
+.collapse-enter-active,
+.collapse-leave-active {
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.collapse-enter-from,
+.collapse-leave-to {
+    opacity: 0;
+    max-height: 0;
+}
+
+.collapse-enter-to,
+.collapse-leave-from {
+    opacity: 1;
+    max-height: 1000px;
 }
 </style>
