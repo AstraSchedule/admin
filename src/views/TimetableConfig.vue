@@ -250,6 +250,8 @@ useRequest(
         if (b.name === '常日') return 1
         return 0
       })
+      // 默认全部收起
+      collapsedTimetables.value = dynamicForm.timetables.map((_, i) => i)
       if (dynamicForm.timetables.length === 0) {
         dynamicForm.timetables.push({ name: '常日', segments: [], dividerInput: '' })
       }
