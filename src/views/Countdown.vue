@@ -16,6 +16,7 @@ const keyword = ref('')
 const {run, loading} = useRequest(listCountdown, {
   manual: false,
   onSuccess: (res) => {
+    console.log('[countdown] API response:', res)
     rows.value = Array.isArray(res?.data) ? res.data : []
     applyFilter()
   },
@@ -73,7 +74,11 @@ const columns = [
   {title: '生效域', key: 'scope', render: (row) => h(ScopeTags, {scopes: row.scope})},
   {
     title: '状态', key: 'status', width: 100, align: 'center',
-    render: (row) => renderStatus(row.status)
+    render: (row) => {
+      const s = row.status || '未知'
+      const type = statusTypeMap[s] || 'default'
+      return h(NTag, {size: 'small', bordered: false, type: type}, {default: () => s})
+    }
   },
   {
     title: '日程数量',

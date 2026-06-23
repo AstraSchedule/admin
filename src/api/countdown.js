@@ -12,7 +12,8 @@ export async function listCountdown(scope) {
     data: arr.map(it => ({
       id: it.id,
       scope: Array.isArray(it.scope) ? it.scope : [],
-      schedules: Array.isArray(it.schedules) ? it.schedules : []
+      schedules: Array.isArray(it.schedules) ? it.schedules : [],
+      status: it.status || '未知'
     }))
   }
 }
