@@ -14,7 +14,12 @@
               show-trigger
               @collapse="collapsed = true"
               @expand="collapsed = false"
+              class="app-sider"
             >
+              <div class="sider-logo" :class="{ 'collapsed': collapsed }">
+                <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="Logo" class="logo-img" />
+                <span v-if="!collapsed" class="logo-text">星程课表</span>
+              </div>
               <n-menu
                 v-model:value="activeKey"
                 :collapsed="collapsed"
@@ -388,3 +393,45 @@ useRequest(
 
 let activeKey =  ref(null), collapsed = ref(false)
 </script>
+
+<style scoped>
+.app-sider {
+    transition: width var(--transition-normal) !important;
+}
+
+.sider-logo {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-sm);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sider-logo.collapsed {
+    justify-content: center;
+    padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.logo-img {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+}
+
+.logo-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    opacity: 1;
+    transition: opacity var(--transition-fast);
+}
+
+.sider-logo.collapsed .logo-text {
+    opacity: 0;
+    width: 0;
+}
+</style>
