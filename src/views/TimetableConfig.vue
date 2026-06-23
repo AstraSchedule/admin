@@ -321,22 +321,50 @@ function validateAll(){
 }
 
 // ---------- 分隔线辅助 ----------
-function isDivider(tb, segIdx) {
-  if (!tb.dividerInput || tb.dividerInput.trim() === '') return false
-  const arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
-  return arr.includes(segIdx)
+// divider 存储的是"课程序号"（0-based），不是行索引
+// 需要在行索引和课程序号之间转换
+
+// 行索引 → 课程序号（仅 valueType==='index' 的行才有课程序号）
+function rowToLessonIndex(tb, rowIdx) {
+  let lessonIdx = -1
+  for (let i = 0; i <= rowIdx; i++) {
+    if (tb.segments[i].valueType === 'index') {
+      lessonIdx++
+    }
+  }
+  return lessonIdx
 }
 
-function toggleDivider(tb, segIdx) {
+// 课程序号 → 行索引
+function lessonIndexToRow(tb, lessonIdx) {
+  let count = -1
+  for (let i = 0; i < tb.segments.length; i++) {
+    if (tb.segments[i].valueType === 'index') {
+      count++
+      if (count === lessonIdx) return i
+    }
+  }
+  return -1
+}
+
+function isDivider(tb, rowIdx) {
+  if (!tb.dividerInput || tb.dividerInput.trim() === '') return false
+  const arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+  const lessonIdx = rowToLessonIndex(tb, rowIdx)
+  return arr.includes(lessonIdx)
+}
+
+function toggleDivider(tb, rowIdx) {
   let arr = []
   if (tb.dividerInput && tb.dividerInput.trim() !== '') {
     arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
   }
-  const idx = arr.indexOf(segIdx)
+  const lessonIdx = rowToLessonIndex(tb, rowIdx)
+  const idx = arr.indexOf(lessonIdx)
   if (idx >= 0) {
     arr.splice(idx, 1)
   } else {
-    arr.push(segIdx)
+    arr.push(lessonIdx)
     arr.sort((a, b) => a - b)
   }
   tb.dividerInput = arr.join(',')
