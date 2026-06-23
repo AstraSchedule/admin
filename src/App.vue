@@ -27,6 +27,9 @@
                 :collapsed-icon-size="22"
                 :options="menuOptions"
               />
+              <div style="padding: 8px; margin-top: auto;">
+                <n-button block quaternary @click="handleLogout">退出登录</n-button>
+              </div>
             </n-layout-sider>
             <n-layout style="padding: 16px">
               <n-alert
@@ -102,11 +105,33 @@ import {
   NSpace,
   useOsTheme
 } from "naive-ui";
-import {RouterLink} from "vue-router";
+import {RouterLink, useRouter} from "vue-router";
 import {useRequest} from "vue-request";
 import axios from "axios";
 import {APISRV} from "@/global.js";
+import {getToken, removeToken, isLoggedIn} from "@/auth.js";
 import hljs from 'highlight.js/lib/core'
+
+const router = useRouter()
+
+axios.interceptors.request.use(config => {
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+axios.interceptors.response.use(
+  resp => resp,
+  error => {
+    if (error?.response?.status === 401) {
+      removeToken()
+      router.replace('/login')
+    }
+    return Promise.reject(error)
+  }
+)
 
 const osThemeRef = useOsTheme();
 let theme = computed(() => osThemeRef.value === "dark" ? darkTheme : null);
@@ -259,6 +284,18 @@ let menuOptions = ref(
               { default: () => "总览" }
             ),
             key: "go-back-home"
+        },
+        {
+            label: () => h(
+              RouterLink,
+              {
+                to: {
+                  name: "Users"
+                }
+              },
+              { default: () => "用户管理" }
+            ),
+            key: "users"
         }
     ]
 );
@@ -392,6 +429,11 @@ useRequest(
 );
 
 let activeKey =  ref(null), collapsed = ref(false)
+
+function handleLogout() {
+  removeToken()
+  router.replace('/login')
+}
 </script>
 
 <style scoped>
