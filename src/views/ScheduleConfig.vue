@@ -29,13 +29,13 @@ const needs = ref({})
 
 const dynamicForm = reactive({
   daily_class: [
-    {Chinese:"一",English:"MON",classList:[],timetable:"常日"},
-    {Chinese:"二",English:"TUE",classList:[],timetable:"常日"},
-    {Chinese:"三",English:"WED",classList:[],timetable:"常日"},
-    {Chinese:"四",English:"THR",classList:[],timetable:"常日"},
-    {Chinese:"五",English:"FRI",classList:[],timetable:"常日"},
-    {Chinese:"六",English:"SAT",classList:[],timetable:"常日"},
-    {Chinese:"日",English:"SUN",classList:[],timetable:"常日"}
+    {Chinese:"一",English:"MON",classList:[[]],timetable:"常日"},
+    {Chinese:"二",English:"TUE",classList:[[]],timetable:"常日"},
+    {Chinese:"三",English:"WED",classList:[[]],timetable:"常日"},
+    {Chinese:"四",English:"THR",classList:[[]],timetable:"常日"},
+    {Chinese:"五",English:"FRI",classList:[[]],timetable:"常日"},
+    {Chinese:"六",English:"SAT",classList:[[]],timetable:"常日"},
+    {Chinese:"日",English:"SUN",classList:[[]],timetable:"常日"}
   ]
 });
 
@@ -53,10 +53,13 @@ async function onPwdConfirm(password) {
     // 提交时转回 API 顺序 [日,一,二,三,四,五,六]
     const [mon, tue, wed, thu, fri, sat, sun] = dynamicForm.daily_class
     const apiOrder = [sun, mon, tue, wed, thu, fri, sat]
+    // classList 已经是嵌套数组格式 [["物"], ["数"]]，直接提交
     const payload = {
       daily_class: apiOrder.map(day => ({
-        ...day,
-        classList: (day.classList || []).map(item => [item])
+        Chinese: day.Chinese,
+        English: day.English,
+        timetable: day.timetable,
+        classList: (day.classList || []).map(slot => Array.isArray(slot) ? slot : [slot])
       }))
     }
     await axios.put(
@@ -90,11 +93,10 @@ useRequest(getSchedule, {
     const reordered = [
       raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]
     ].filter(Boolean)
+    // classList 保持嵌套数组格式 [["物"], ["数"]] 或 [["物", "化"], ["数"]]
     for (const day of reordered) {
-      // API 返回 [["物"], ["数"]] 或 [["物,化,地,数"], ["数,语"]]
-      // 展平为 ["物"] 或 ["物,化,地,数"]（保留逗号分隔格式）
-      if (Array.isArray(day.classList)) {
-        day.classList = day.classList.map(item => Array.isArray(item) ? item[0] : item)
+      if (!Array.isArray(day.classList)) {
+        day.classList = []
       }
     }
     dynamicForm.daily_class = reordered
@@ -157,30 +159,45 @@ function getColumns() {
     cols.push({
       title: `周${weekDays[d]}`,
       key: `day_${d}`,
-      width: 130,
+      width: 140,
       render(row) {
         const day = dynamicForm.daily_class[dayIdx]
         const need = needs.value[day.timetable] || 0
         const periodIdx = row.period - 1
         if (periodIdx >= need) return h('span', {style: 'opacity: 0.3;'}, '-')
-        const val = (day.classList || [])[periodIdx] || null
-        // 检查是否包含逗号（多周轮换）
-        if (val && val.includes(',')) {
-          return h(NInput, {
-            value: val,
+        // classList 是嵌套数组 [[], []]，取对应节次的数组
+        const slot = (day.classList || [])[periodIdx] || []
+        const options = Array.isArray(slot) ? slot : [slot]
+        if (options.length === 0) {
+          return h(NSelect, {
+            value: null,
+            options: subjectsOptionsLst.value,
             size: 'small',
-            placeholder: '逗号分隔，如: 物,化,地,数',
-            title: '多周轮换：用逗号分隔各周课程',
-            onUpdateValue(v) { day.classList[periodIdx] = v }
+            placeholder: '选科目',
+            onUpdateValue(val) {
+              day.classList[periodIdx] = [val]
+            }
           })
         }
-        return h(NSelect, {
-          value: val,
-          options: subjectsOptionsLst.value,
+        if (options.length === 1) {
+          return h(NSelect, {
+            value: options[0],
+            options: subjectsOptionsLst.value,
+            size: 'small',
+            placeholder: '选科目',
+            onUpdateValue(val) {
+              day.classList[periodIdx] = [val]
+            }
+          })
+        }
+        // 多周轮换：显示为文本，格式 "物/化/地/数"
+        return h(NInput, {
+          value: options.join('/'),
           size: 'small',
-          placeholder: '选科目',
-          onUpdateValue(val) {
-            day.classList[periodIdx] = val
+          placeholder: '物/化/地/数',
+          title: '多周轮换：用 / 分隔各周课程',
+          onUpdateValue(v) {
+            day.classList[periodIdx] = v.split('/').map(s => s.trim()).filter(Boolean)
           }
         })
       }
@@ -216,6 +233,47 @@ function getTimetableRow() {
 }
 
 const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
+
+// 切换单周/多周轮换
+function toggleMultiWeek(dayIdx, periodIdx) {
+  const day = dynamicForm.daily_class[dayIdx]
+  const slot = (day.classList || [])[periodIdx] || []
+  if (slot.length <= 1) {
+    // 切换为多周：复制当前科目作为第二周选项
+    const current = slot[0] || ''
+    day.classList[periodIdx] = current ? [current, current] : ['']
+  } else {
+    // 切换为单周：只保留第一个
+    day.classList[periodIdx] = [slot[0] || '']
+  }
+}
+
+// 判断是否多周轮换
+function isMultiWeek(dayIdx, periodIdx) {
+  const slot = (dynamicForm.daily_class[dayIdx].classList || [])[periodIdx] || []
+  return slot.length > 1
+}
+
+// 获取选择器的值
+function getSlotValue(dayIdx, periodIdx) {
+  const slot = (dynamicForm.daily_class[dayIdx].classList || [])[periodIdx] || []
+  if (slot.length > 1) {
+    return slot // 多周返回数组
+  }
+  return slot[0] || null // 单周返回字符串
+}
+
+// 设置选择器的值
+function setSlotValue(dayIdx, periodIdx, val) {
+  const day = dynamicForm.daily_class[dayIdx]
+  if (isMultiWeek(dayIdx, periodIdx)) {
+    // 多周模式：val 是数组
+    day.classList[periodIdx] = (Array.isArray(val) ? val : [val]).filter(Boolean)
+  } else {
+    // 单周模式：val 是字符串
+    day.classList[periodIdx] = [val].filter(Boolean)
+  }
+}
 </script>
 
 <template>
@@ -255,7 +313,7 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
                     dc.timetable = val
                     const need = needs[val] || 0
                     const old = dc.classList || []
-                    dc.classList = Array.from({length: need}, (_, i) => old[i] || '')
+                    dc.classList = Array.from({length: need}, (_, i) => old[i] || [''])
                   }"
                 />
               </td>
@@ -266,13 +324,26 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
               <td class="row-label">第{{ p }}节</td>
               <td v-for="(day, d) in weekDays" :key="d">
                 <template v-if="(needs[dynamicForm.daily_class[d].timetable] || 0) >= p">
-                  <NSelect
-                    :value="(dynamicForm.daily_class[d].classList || [])[p - 1] || null"
-                    :options="subjectsOptionsLst"
-                    size="small"
-                    placeholder="选科目"
-                    @update:value="(val) => { dynamicForm.daily_class[d].classList[p - 1] = val }"
-                  />
+                  <div class="period-cell">
+                    <NSelect
+                      :value="getSlotValue(d, p - 1)"
+                      :options="subjectsOptionsLst"
+                      :multiple="isMultiWeek(d, p - 1)"
+                      size="small"
+                      :placeholder="isMultiWeek(d, p - 1) ? '多周轮换' : '选科目'"
+                      :max-tag-count="1"
+                      @update:value="(val) => setSlotValue(d, p - 1, val)"
+                    />
+                    <NButton
+                      size="tiny"
+                      text
+                      :type="isMultiWeek(d, p - 1) ? 'primary' : 'default'"
+                      @click="toggleMultiWeek(d, p - 1)"
+                      :title="isMultiWeek(d, p - 1) ? '切换为单周' : '切换为多周轮换'"
+                    >
+                      {{ isMultiWeek(d, p - 1) ? '多周' : '单周' }}
+                    </NButton>
+                  </div>
                 </template>
                 <span v-else class="empty-cell">-</span>
               </td>
@@ -338,6 +409,16 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
 
 .empty-cell {
   opacity: 0.3;
+}
+
+.period-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-cell :deep(.n-select) {
+  flex: 1;
 }
 
 .submit-area {
