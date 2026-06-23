@@ -490,20 +490,20 @@ function getSegmentColumns(tIdx) {
       width: 150,
       align: 'center',
       render(row) {
-        return h(NSpace, { justify: 'center', size: 4 }, {
+        return h(NSpace, { justify: 'center', size: 12 }, {
           default: () => [
             h(NTooltip, null, {
-              trigger: () => h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
+              trigger: () => h(NButton, { size: 'small', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
               default: () => '在上方插入'
             }),
             h(NTooltip, null, {
-              trigger: () => h(NButton, { size: 'tiny', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
+              trigger: () => h(NButton, { size: 'small', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
               default: () => '在下方插入'
             }),
             h(NPopconfirm, {
               onPositiveClick: () => removeSegment(tb, row._idx)
             }, {
-              trigger: () => h(NButton, { size: 'tiny', text: true, type: 'error' }, { default: () => '删除' }),
+              trigger: () => h(NButton, { size: 'small', text: true, type: 'error' }, { default: () => '删除' }),
               default: () => '确认删除此段？'
             })
           ]
