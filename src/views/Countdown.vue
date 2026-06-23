@@ -103,19 +103,6 @@ const columns = [
 
 const expandedRowKeys = ref([])
 
-function renderScheduleRow(sch) {
-  return h('div', {style: 'padding: 8px 0;'}, [
-    h(NSpace, {align: 'center', size: 12}, {
-      default: () => [
-        h(NTag, {size: 'small', bordered: false}, {default: () => sch.name}),
-        h('span', {style: 'font-size: 13px; opacity: 0.7;'}, sch.date),
-        h(NTag, {size: 'small', bordered: false, type: 'info'}, {default: () => `P${sch.priority ?? 0}`}),
-        renderStatus(sch.status)
-      ]
-    })
-  ])
-}
-
 const filteredRows = ref([])
 
 function applyFilter() {
@@ -162,8 +149,11 @@ watch(keyword, () => {
       <template #expanded-row="{ row }">
         <div style="padding: 8px 16px;">
           <div v-if="!row.schedules || row.schedules.length === 0" style="opacity: 0.5;">暂无日程</div>
-          <div v-for="(sch, idx) in (row.schedules || [])" :key="idx">
-            {{ renderScheduleRow(sch) }}
+          <div v-for="(sch, idx) in (row.schedules || [])" :key="idx" style="padding: 6px 0; display: flex; align-items: center; gap: 12px;">
+            <n-tag size="small" :bordered="false">{{ sch.name }}</n-tag>
+            <span style="font-size: 13px; opacity: 0.7;">{{ sch.date }}</span>
+            <n-tag size="small" :bordered="false" type="info">P{{ sch.priority ?? 0 }}</n-tag>
+            <n-tag size="small" :bordered="false" :type="statusTypeMap[sch.status] || 'default'">{{ sch.status }}</n-tag>
           </div>
         </div>
       </template>
