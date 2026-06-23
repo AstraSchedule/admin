@@ -16,7 +16,6 @@ const keyword = ref('')
 const {run, loading} = useRequest(listCountdown, {
   manual: false,
   onSuccess: (res) => {
-    console.log('[countdown] API response:', res)
     rows.value = Array.isArray(res?.data) ? res.data : []
     applyFilter()
   },
