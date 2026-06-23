@@ -25,13 +25,23 @@ function fallbackScopeLabel(p) {
 <template>
   <n-space :size="4" wrap>
     <template v-for="v in (Array.isArray(scopes) ? scopes : [])" :key="String(v)">
-      <n-tag v-if="v==='ALL'" :bordered="false" size="small" type="info">ALL</n-tag>
+      <n-tag v-if="v==='ALL'" :bordered="false" size="small" type="info" round>ALL</n-tag>
       <template v-else>
         <!--suppress JSValidateTypes -->
-        <n-tag :bordered="false" :type="getScopeTagType(parseScope(v).level)" size="small">
+        <n-tag :bordered="false" :type="getScopeTagType(parseScope(v).level)" size="small" round>
           {{ fallbackScopeLabel(parseScope(v)) }}
         </n-tag>
       </template>
     </template>
   </n-space>
 </template>
+
+<style scoped>
+.n-tag {
+    transition: all var(--transition-fast);
+}
+
+.n-tag:hover {
+    transform: scale(1.05);
+}
+</style>
