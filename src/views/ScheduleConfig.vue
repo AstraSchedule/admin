@@ -338,7 +338,7 @@ function setSlotValue(dayIdx, periodIdx, val) {
                       size="tiny"
                       text
                       :type="isMultiWeek(d, p - 1) ? 'primary' : 'default'"
-                      @click="toggleMultiWeek(d, p - 1)"
+                      @click.stop="toggleMultiWeek(d, p - 1)"
                       :title="isMultiWeek(d, p - 1) ? '切换为单周' : '切换为多周轮换'"
                     >
                       {{ isMultiWeek(d, p - 1) ? '多周' : '单周' }}
