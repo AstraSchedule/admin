@@ -17,6 +17,7 @@ import {
   NPopconfirm,
   NRadioButton,
   NRadioGroup,
+  NSelect,
   NSpace,
   NStatistic,
   NTooltip,
