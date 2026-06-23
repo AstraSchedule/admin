@@ -395,16 +395,12 @@ let activeKey =  ref(null), collapsed = ref(false)
 </script>
 
 <style scoped>
-.app-sider {
-    transition: width var(--transition-normal) !important;
-}
-
 .sider-logo {
     display: flex;
     align-items: center;
     padding: var(--spacing-md);
     gap: var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--n-border-color, #e0e0e6);
     margin-bottom: var(--spacing-sm);
     overflow: hidden;
     white-space: nowrap;
@@ -425,9 +421,7 @@ let activeKey =  ref(null), collapsed = ref(false)
 .logo-text {
     font-size: 16px;
     font-weight: 600;
-    color: var(--text-primary);
     opacity: 1;
-    transition: opacity var(--transition-fast);
 }
 
 .sider-logo.collapsed .logo-text {

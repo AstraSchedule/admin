@@ -308,13 +308,3 @@ async function onPwdConfirm(password) {
   </NFlex>
 </template>
 
-<style scoped>
-:deep(.n-card.size--small) {
-    margin-bottom: var(--spacing-sm);
-    transition: box-shadow var(--transition-normal);
-}
-
-:deep(.n-card.size--small:hover) {
-    box-shadow: var(--shadow-sm);
-}
-</style>

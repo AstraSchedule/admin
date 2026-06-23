@@ -26,20 +26,3 @@ document.title = "404 - 一片荒无人烟的地方，像是异世界"
     </n-result>
   </div>
 </template>
-
-<style scoped>
-.not-found {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 60vh;
-}
-
-.icon-wrapper {
-    margin-bottom: 16px;
-}
-
-.footer-content {
-    text-align: center;
-}
-</style>

@@ -300,10 +300,6 @@ const preview = computed(()=> JSON.stringify(buildPayload(), null, 2))
 </template>
 
 <style scoped>
-:deep(.n-card.size--small) {
-    margin-bottom: var(--spacing-sm);
-}
-
 .center {
     max-width: 800px;
     margin: 0 auto;

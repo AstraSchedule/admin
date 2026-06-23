@@ -333,17 +333,8 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
 </template>
 
 <style scoped>
-:deep(.n-collapse-item) {
-    margin-bottom: var(--spacing-sm);
-}
-
 :deep(.n-collapse-item__header) {
     font-weight: 500;
-    padding: var(--spacing-sm) var(--spacing-md);
-}
-
-:deep(.n-collapse-item__content-wrapper) {
-    padding: 0 var(--spacing-md);
 }
 
 .center {

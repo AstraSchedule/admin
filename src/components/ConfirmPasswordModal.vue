@@ -31,9 +31,3 @@ function onConfirm() {
     </template>
   </n-modal>
 </template>
-
-<style scoped>
-:deep(.n-modal) {
-    border-radius: var(--radius-lg);
-}
-</style>

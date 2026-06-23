@@ -233,31 +233,14 @@ useThemeVars();
 .stat {
     max-width: 300px;
     min-width: 200px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: var(--radius-lg) !important;
-    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
-}
-
-.stat:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
-.stat:nth-child(2) {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.stat:nth-child(3) {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
 .stat :deep(.n-statistic__label) {
-    color: rgba(255, 255, 255, 0.9);
     font-size: 13px;
 }
 
 .stat :deep(.n-statistic__value) {
-    color: white;
     font-size: 28px;
     font-weight: 600;
 }

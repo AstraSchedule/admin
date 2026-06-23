@@ -149,12 +149,7 @@ watch(keyword, () => {
 </template>
 
 <style scoped>
-:deep(.n-data-table) {
-    border-radius: var(--radius-md);
-}
-
 :deep(.n-data-table th) {
     font-weight: 600;
-    background: var(--bg-page);
 }
 </style>

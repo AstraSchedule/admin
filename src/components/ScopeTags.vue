@@ -36,12 +36,4 @@ function fallbackScopeLabel(p) {
   </n-space>
 </template>
 
-<style scoped>
-.n-tag {
-    transition: all var(--transition-fast);
-}
 
-.n-tag:hover {
-    transform: scale(1.05);
-}
-</style>
