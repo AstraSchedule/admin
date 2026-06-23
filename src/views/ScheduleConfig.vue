@@ -238,26 +238,34 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
 function toggleMultiWeek(dayIdx, periodIdx) {
   const day = dynamicForm.daily_class[dayIdx]
   const slot = (day.classList || [])[periodIdx] || []
-  if (slot.length <= 1) {
-    // 切换为多周：添加一个空选项，让用户选择第二周课程
-    const current = slot[0] || ''
-    day.classList[periodIdx] = current ? [current, ''] : ['', '']
+  // 用特殊标记区分模式：单周=[单元素数组]，多周=[多元素数组或带标记]
+  // 这里用数组长度判断：length===1 且最后一个元素不以 "__multi__" 开头 = 单周
+  // 简单方案：用一个额外的 reactive 对象记录每个格子的模式
+  const key = `${dayIdx}_${periodIdx}`
+  if (multiWeekMode.value[key]) {
+    // 切回单周：保留第一个有效选项
+    const first = slot.find(s => s && s !== '') || ''
+    day.classList[periodIdx] = [first]
+    delete multiWeekMode.value[key]
   } else {
-    // 切换为单周：只保留第一个
-    day.classList[periodIdx] = [slot[0] || '']
+    // 切换为多周：保持当前选项不变
+    multiWeekMode.value[key] = true
   }
 }
 
-// 判断是否多周轮换
+// 多周模式标记
+const multiWeekMode = ref({})
+
+// 判断是否多周
 function isMultiWeek(dayIdx, periodIdx) {
-  const slot = (dynamicForm.daily_class[dayIdx].classList || [])[periodIdx] || []
-  return slot.length > 1
+  const key = `${dayIdx}_${periodIdx}`
+  return !!multiWeekMode.value[key]
 }
 
 // 获取选择器的值
 function getSlotValue(dayIdx, periodIdx) {
   const slot = (dynamicForm.daily_class[dayIdx].classList || [])[periodIdx] || []
-  if (slot.length > 1) {
+  if (isMultiWeek(dayIdx, periodIdx)) {
     return slot // 多周返回数组
   }
   return slot[0] || null // 单周返回字符串
