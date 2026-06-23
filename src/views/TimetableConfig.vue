@@ -2,6 +2,7 @@
 import {
   NButton,
   NCard,
+  NCheckbox,
   NCode,
   NDataTable,
   NDatePicker,
@@ -319,6 +320,28 @@ function validateAll(){
   return allOk
 }
 
+// ---------- 分隔线辅助 ----------
+function isDivider(tb, segIdx) {
+  if (!tb.dividerInput || tb.dividerInput.trim() === '') return false
+  const arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+  return arr.includes(segIdx)
+}
+
+function toggleDivider(tb, segIdx) {
+  let arr = []
+  if (tb.dividerInput && tb.dividerInput.trim() !== '') {
+    arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+  }
+  const idx = arr.indexOf(segIdx)
+  if (idx >= 0) {
+    arr.splice(idx, 1)
+  } else {
+    arr.push(segIdx)
+    arr.sort((a, b) => a - b)
+  }
+  tb.dividerInput = arr.join(',')
+}
+
 // ---------- 表格列定义 ----------
 function getSegmentColumns(tIdx) {
   const tb = dynamicForm.timetables[tIdx]
@@ -406,6 +429,20 @@ function getSegmentColumns(tIdx) {
       }
     },
     {
+      title: '分隔线',
+      key: 'divider',
+      width: 70,
+      align: 'center',
+      render(row) {
+        const seg = tb.segments[row._idx]
+        if (seg.valueType !== 'index') return '-'
+        return h(NCheckbox, {
+          checked: isDivider(tb, row._idx),
+          onUpdateChecked() { toggleDivider(tb, row._idx) }
+        })
+      }
+    },
+    {
       title: '操作',
       key: 'actions',
       width: 150,
@@ -452,12 +489,9 @@ function getSegmentColumns(tIdx) {
       <div v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" class="timetable-block">
         <div class="timetable-header">
           <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" />
-          <NSpace :size="8">
-            <NInput v-model:value="tb.dividerInput" placeholder="Divider (如: 0,4,7)" style="width: 200px;" size="small" />
-            <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1">
-              删除此作息
-            </NButton>
-          </NSpace>
+          <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1">
+            删除此作息
+          </NButton>
         </div>
 
         <NDataTable
