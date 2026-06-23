@@ -168,3 +168,14 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
         />
     </NFlex>
 </template>
+
+<style scoped>
+.center {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+:deep(.n-form-item) {
+    margin-bottom: var(--spacing-md);
+}
+</style>
