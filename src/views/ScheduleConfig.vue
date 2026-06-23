@@ -5,6 +5,7 @@ import {
   NCode,
   NDataTable,
   NFlex,
+  NInput,
   NSelect,
   NSpace,
   NStatistic,
@@ -90,6 +91,8 @@ useRequest(getSchedule, {
       raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]
     ].filter(Boolean)
     for (const day of reordered) {
+      // API 返回 [["物"], ["数"]] 或 [["物,化,地,数"], ["数,语"]]
+      // 展平为 ["物"] 或 ["物,化,地,数"]（保留逗号分隔格式）
       if (Array.isArray(day.classList)) {
         day.classList = day.classList.map(item => Array.isArray(item) ? item[0] : item)
       }
@@ -161,6 +164,16 @@ function getColumns() {
         const periodIdx = row.period - 1
         if (periodIdx >= need) return h('span', {style: 'opacity: 0.3;'}, '-')
         const val = (day.classList || [])[periodIdx] || null
+        // 检查是否包含逗号（多周轮换）
+        if (val && val.includes(',')) {
+          return h(NInput, {
+            value: val,
+            size: 'small',
+            placeholder: '逗号分隔，如: 物,化,地,数',
+            title: '多周轮换：用逗号分隔各周课程',
+            onUpdateValue(v) { day.classList[periodIdx] = v }
+          })
+        }
         return h(NSelect, {
           value: val,
           options: subjectsOptionsLst.value,
