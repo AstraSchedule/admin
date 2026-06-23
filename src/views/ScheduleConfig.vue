@@ -18,7 +18,7 @@ import {useRequest} from "vue-request";
 import {useRoute} from "vue-router";
 
 const route = useRoute();
-const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 const school = computed(() => route.params.school);
 const grade = computed(() => route.params.grade);
 const cls = computed(() => route.params.cls);
@@ -28,13 +28,13 @@ const needs = ref({})
 
 const dynamicForm = reactive({
   daily_class: [
-    {Chinese:"日",English:"SUN",classList:[],timetable:"常日"},
     {Chinese:"一",English:"MON",classList:[],timetable:"常日"},
     {Chinese:"二",English:"TUE",classList:[],timetable:"常日"},
     {Chinese:"三",English:"WED",classList:[],timetable:"常日"},
     {Chinese:"四",English:"THR",classList:[],timetable:"常日"},
     {Chinese:"五",English:"FRI",classList:[],timetable:"常日"},
-    {Chinese:"六",English:"SAT",classList:[],timetable:"常日"}
+    {Chinese:"六",English:"SAT",classList:[],timetable:"常日"},
+    {Chinese:"日",English:"SUN",classList:[],timetable:"常日"}
   ]
 });
 
@@ -49,9 +49,11 @@ function submit() {
 async function onPwdConfirm(password) {
   saving.value = true
   try {
-    // 提交时将 classList 转换回嵌套数组格式 [["物"], ["数"]]
+    // 提交时转回 API 顺序 [日,一,二,三,四,五,六]
+    const [mon, tue, wed, thu, fri, sat, sun] = dynamicForm.daily_class
+    const apiOrder = [sun, mon, tue, wed, thu, fri, sat]
     const payload = {
-      daily_class: dynamicForm.daily_class.map(day => ({
+      daily_class: apiOrder.map(day => ({
         ...day,
         classList: (day.classList || []).map(item => [item])
       }))
@@ -82,14 +84,17 @@ useRequest(getSchedule, {
   refreshDeps: [school, grade, cls],
   initialData: { daily_class: dynamicForm.daily_class },
   onSuccess: (response) => {
-    // API 返回 classList 为 [["物"], ["数"]]，需要展平为 ["物", "数"]
-    const daily = response.data['daily_class'] || []
-    for (const day of daily) {
+    // API 返回顺序是 [日,一,二,三,四,五,六]，重排为 [一,二,三,四,五,六,日]
+    const raw = response.data['daily_class'] || []
+    const reordered = [
+      raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]
+    ].filter(Boolean)
+    for (const day of reordered) {
       if (Array.isArray(day.classList)) {
         day.classList = day.classList.map(item => Array.isArray(item) ? item[0] : item)
       }
     }
-    dynamicForm.daily_class = daily
+    dynamicForm.daily_class = reordered
     dataLoaded.value = true
   }
 });
