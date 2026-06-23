@@ -27,12 +27,12 @@ import axios from 'axios'
 import {APISRV} from '@/global.js'
 import {useRequest} from 'vue-request'
 import {useRoute} from 'vue-router'
+import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
 
 const route = useRoute()
 const school = computed(() => route.params.school)
 const grade = computed(() => route.params.grade)
 const formRef = ref(null)
-const pwd = ref('')
 
 // 编辑内部结构：
 // timetables: [ { name: '常日', segments: [ { start:'00:00', end:'07:09', valueType:'text', text:'早自习', index:null }, { start:'07:10', end:'07:49', valueType:'index', index:0 } ], dividerInput: '0,4,7' } ]
@@ -161,51 +161,34 @@ function insertSegmentBelow(timetable, idx){
 }
 
 // ---------- 交互 ----------
-let showModal = ref(false)
-let disabledButton = ref(false)
-let buttonText = ref('确认提交')
+const showModal = ref(false)
+const saving = ref(false)
 function submit() {
-  if(!validateAll()) return; // 有错误直接返回
+  if(!validateAll()) return;
   showModal.value = true
 }
 
 const messages = useMessage()
 
 // ---------- 请求 ----------
-const putTimetable = () => {
-  const payload = buildPayload()
-  return Promise.resolve(
-    axios.put(
+async function okay(password) {
+  saving.value = true
+  try {
+    const payload = buildPayload()
+    await axios.put(
       `${APISRV}/web/config/${school.value}/${grade.value}/timetable`,
       payload,
-      {
-        auth: { username: 'ElectronClassSchedule', password: pwd.value }
-      }
+      { auth: { username: 'ElectronClassSchedule', password } }
     )
-  )
-}
-
-function okay() {
-  disabledButton.value = true
-  buttonText.value = '你等会儿'
-  useRequest(
-    putTimetable,
-    {
-      onSuccess: (response) => {
-        console.log(response.data)
-        messages.success('服务端说行')
-        showModal.value = false
-      },
-      onError: (error) => {
-        console.log(error)
-        if (error.status === 401) messages.error('你寻思寻思这密码它对吗？')
-        else if (error.status === 400) messages.error('码姿不对，删了重写！（服务端校验不通过）')
-        else messages.error(`服务端看完天塌了（状态码：${error}）`)
-      }
-    }
-  )
-  buttonText.value = '确认提交'
-  disabledButton.value = false
+    messages.success('服务端说行')
+    showModal.value = false
+  } catch (error) {
+    if (error.status === 401) messages.error('你寻思寻思这密码它对吗？')
+    else if (error.status === 400) messages.error('码姿不对，删了重写！（服务端校验不通过）')
+    else messages.error(`服务端看完天塌了（状态码：${error}）`)
+  } finally {
+    saving.value = false
+  }
 }
 
 const getTimetable = () => {
@@ -584,15 +567,13 @@ function getSegmentColumns(tIdx) {
       <n-code :code="preview" language="json" show-line-numbers />
     </NCard>
 
-    <n-modal v-model:show="showModal" preset="dialog" title="你是入吗？">
-      <n-space vertical>
-        <div>此操作需要密码</div>
-        <n-input type="password" v-model:value="pwd" clearable placeholder="输入密码" />
-      </n-space>
-      <template #action>
-        <n-button type="primary" @click="okay" :loading="disabledButton">确认提交</n-button>
-      </template>
-    </n-modal>
+    <ConfirmPasswordModal
+      v-model:show="showModal"
+      :loading="saving"
+      title="你是入吗？"
+      confirm-text="确认提交"
+      @confirm="okay"
+    />
   </NFlex>
 </template>
 
