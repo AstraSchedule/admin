@@ -244,6 +244,12 @@ useRequest(
         const dividerInput = (data.divider && data.divider[name]) ? data.divider[name].join(',') : ''
         dynamicForm.timetables.push({ name, segments, dividerInput })
       }
+      // 常日排到最前面
+      dynamicForm.timetables.sort((a, b) => {
+        if (a.name === '常日') return -1
+        if (b.name === '常日') return 1
+        return 0
+      })
       if (dynamicForm.timetables.length === 0) {
         dynamicForm.timetables.push({ name: '常日', segments: [], dividerInput: '' })
       }
