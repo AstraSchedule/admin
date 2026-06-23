@@ -1,6 +1,3 @@
-import axios from 'axios'
-import {APISRV} from './global.js'
-
 const TOKEN_KEY = 'astra_jwt_token'
 
 export function getToken() {
@@ -17,17 +14,4 @@ export function removeToken() {
 
 export function isLoggedIn() {
   return !!getToken()
-}
-
-export function getAuthHeaders() {
-  const token = getToken()
-  if (token) {
-    return {Authorization: `Bearer ${token}`}
-  }
-  return {}
-}
-
-export async function fetchMe() {
-  const resp = await axios.get(`${APISRV}/web/auth/me`, {headers: getAuthHeaders()})
-  return resp.data
 }

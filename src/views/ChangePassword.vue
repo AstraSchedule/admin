@@ -2,17 +2,28 @@
 import {ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage} from 'naive-ui'
-import axios from 'axios'
-import {APISRV} from '@/global.js'
-import {getAuthHeaders, removeToken} from '@/auth.js'
+import {useRequest} from 'vue-request'
+import {changePassword} from '@/api/auth.js'
+import {removeToken} from '@/auth.js'
 
 const router = useRouter()
 const message = useMessage()
 
 const form = ref({old_password: '', new_password: '', confirm_password: ''})
-const loading = ref(false)
 
-async function handleChangePassword() {
+const {loading, run} = useRequest(() => changePassword(form.value.old_password, form.value.new_password), {
+  manual: true,
+  onSuccess: () => {
+    message.success('密码修改成功，请重新登录')
+    removeToken()
+    router.replace('/login')
+  },
+  onError: (e) => {
+    message.error(e?.response?.data?.detail || '修改失败')
+  }
+})
+
+function handleSubmit() {
   if (!form.value.old_password || !form.value.new_password) {
     message.warning('请填写完整')
     return
@@ -25,21 +36,7 @@ async function handleChangePassword() {
     message.warning('两次输入的新密码不一致')
     return
   }
-  loading.value = true
-  try {
-    await axios.post(`${APISRV}/web/auth/change-password`, {
-      old_password: form.value.old_password,
-      new_password: form.value.new_password
-    }, {headers: getAuthHeaders()})
-    message.success('密码修改成功，请重新登录')
-    removeToken()
-    router.replace('/login')
-  } catch (e) {
-    const detail = e?.response?.data?.detail || '修改失败'
-    message.error(detail)
-  } finally {
-    loading.value = false
-  }
+  run()
 }
 
 function handleLogout() {
@@ -58,13 +55,13 @@ function handleLogout() {
             <n-input v-model:value="form.old_password" type="password" show-password-on="click" placeholder="请输入当前密码"/>
           </n-form-item>
           <n-form-item label="新密码">
-            <n-input v-model:value="form.new_password" type="password" show-password-on="click" placeholder="至少 6 位" @keyup.enter="handleChangePassword"/>
+            <n-input v-model:value="form.new_password" type="password" show-password-on="click" placeholder="至少 6 位" @keyup.enter="handleSubmit"/>
           </n-form-item>
           <n-form-item label="确认密码">
-            <n-input v-model:value="form.confirm_password" type="password" show-password-on="click" placeholder="再次输入新密码" @keyup.enter="handleChangePassword"/>
+            <n-input v-model:value="form.confirm_password" type="password" show-password-on="click" placeholder="再次输入新密码" @keyup.enter="handleSubmit"/>
           </n-form-item>
         </n-form>
-        <n-button type="primary" block :loading="loading" @click="handleChangePassword">确认修改</n-button>
+        <n-button type="primary" block :loading="loading" @click="handleSubmit">确认修改</n-button>
         <n-button block @click="handleLogout">退出登录</n-button>
       </n-space>
     </n-card>

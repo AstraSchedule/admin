@@ -3,10 +3,8 @@ import {h, ref} from 'vue'
 import {
   NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, useMessage
 } from 'naive-ui'
-import axios from 'axios'
-import {APISRV} from '@/global.js'
-import {getAuthHeaders} from '@/auth.js'
 import {useRequest} from 'vue-request'
+import {listUsers, createUser, updateUser, deleteUser} from '@/api/auth.js'
 
 const message = useMessage()
 
@@ -19,6 +17,14 @@ const roleOptions = [
 
 const roleLabelMap = {admin: '管理员', school_rw: '校读写', grade_rw: '级读写', class_rw: '班读写'}
 const roleTypeMap = {admin: 'error', school_rw: 'warning', grade_rw: 'info', class_rw: 'success'}
+
+const users = ref([])
+
+const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
+  manual: false,
+  onSuccess: (data) => { users.value = Array.isArray(data?.data) ? data.data : [] },
+  onError: (e) => { message.error(e?.response?.data?.detail || '获取用户列表失败') }
+})
 
 const columns = [
   {title: 'ID', key: 'id', width: 60},
@@ -42,27 +48,46 @@ const columns = [
       return h(NSpace, {}, {
         default: () => [
           h(NButton, {size: 'small', onClick: () => openEdit(row)}, {default: () => '编辑'}),
-          h(NButton, {size: 'small', type: 'error', onClick: () => handleDelete(row)}, {default: () => '删除'})
+          h(NButton, {size: 'small', type: 'error', onClick: () => doDelete(row)}, {default: () => '删除'})
         ]
       })
     }
   }
 ]
 
-const users = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
 const form = ref({username: '', password: '', role: 'class_rw', scope: ''})
-const saving = ref(false)
 
-function fetchUsers() {
-  axios.get(`${APISRV}/web/users`, {headers: getAuthHeaders()})
-    .then(resp => { users.value = resp.data.data || [] })
-    .catch(e => { message.error(e?.response?.data?.detail || '获取用户列表失败') })
-}
+const {loading: saveLoading, run: runSave} = useRequest(
+  () => {
+    if (isEdit.value) {
+      const payload = {username: form.value.username, role: form.value.role, scope: form.value.scope}
+      if (form.value.password) payload.password = form.value.password
+      return updateUser(editId.value, payload)
+    }
+    return createUser(form.value)
+  },
+  {
+    manual: true,
+    onSuccess: () => {
+      message.success(isEdit.value ? '用户更新成功' : '用户创建成功')
+      showModal.value = false
+      fetchUsers()
+    },
+    onError: (e) => { message.error(e?.response?.data?.detail || '操作失败') }
+  }
+)
 
-useRequest(() => Promise.resolve(), {onSuccess: () => fetchUsers()})
+const {run: runDelete} = useRequest(
+  (row) => deleteUser(row.id),
+  {
+    manual: true,
+    onSuccess: () => { message.success('用户已删除'); fetchUsers() },
+    onError: (e) => { message.error(e?.response?.data?.detail || '删除失败') }
+  }
+)
 
 function openCreate() {
   isEdit.value = false
@@ -78,39 +103,16 @@ function openEdit(row) {
   showModal.value = true
 }
 
-async function handleSave() {
-  saving.value = true
-  try {
-    if (isEdit.value) {
-      const payload = {username: form.value.username, role: form.value.role, scope: form.value.scope}
-      if (form.value.password) payload.password = form.value.password
-      await axios.put(`${APISRV}/web/users/${editId.value}`, payload, {headers: getAuthHeaders()})
-      message.success('用户更新成功')
-    } else {
-      if (!form.value.username || !form.value.password) {
-        message.warning('用户名和密码不能为空')
-        return
-      }
-      await axios.post(`${APISRV}/web/users`, form.value, {headers: getAuthHeaders()})
-      message.success('用户创建成功')
-    }
-    showModal.value = false
-    fetchUsers()
-  } catch (e) {
-    message.error(e?.response?.data?.detail || '操作失败')
-  } finally {
-    saving.value = false
+function handleSave() {
+  if (!isEdit.value && (!form.value.username || !form.value.password)) {
+    message.warning('用户名和密码不能为空')
+    return
   }
+  runSave()
 }
 
-async function handleDelete(row) {
-  try {
-    await axios.delete(`${APISRV}/web/users/${row.id}`, {headers: getAuthHeaders()})
-    message.success('用户已删除')
-    fetchUsers()
-  } catch (e) {
-    message.error(e?.response?.data?.detail || '删除失败')
-  }
+function doDelete(row) {
+  runDelete(row)
 }
 </script>
 
@@ -119,7 +121,7 @@ async function handleDelete(row) {
     <template #header-extra>
       <n-button type="primary" @click="openCreate">新增用户</n-button>
     </template>
-    <n-data-table :columns="columns" :data="users" :bordered="false"/>
+    <n-data-table :columns="columns" :data="users" :loading="listLoading" :bordered="false"/>
   </n-card>
 
   <n-modal v-model:show="showModal" preset="dialog" :title="isEdit ? '编辑用户' : '新增用户'">
@@ -138,7 +140,7 @@ async function handleDelete(row) {
       </n-form-item>
     </n-form>
     <template #action>
-      <n-button :loading="saving" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button>
+      <n-button :loading="saveLoading" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button>
     </template>
   </n-modal>
 </template>
