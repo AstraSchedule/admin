@@ -593,11 +593,13 @@ function getSegmentColumns(tIdx) {
       @confirm="okay"
     />
     <NModal v-model:show="showCopyFromModal" preset="dialog" title="从哪个模板复制？">
-      <NSelect
-        v-model:value="copyFromIndex"
-        :options="dynamicForm.timetables.map((t, i) => ({ label: t.name, value: i }))"
-        placeholder="选择模板"
-      />
+      <div style="padding: 8px 0;">
+        <NSelect
+          v-model:value="copyFromIndex"
+          :options="dynamicForm.timetables.map((t, i) => ({ label: t.name, value: i }))"
+          placeholder="选择模板"
+        />
+      </div>
       <template #action>
         <NButton type="primary" @click="confirmAddTimetable">确认</NButton>
       </template>
