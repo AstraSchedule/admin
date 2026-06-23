@@ -255,6 +255,8 @@ function toggleMultiWeek(dayIdx, periodIdx) {
 
 // 多周模式标记
 const multiWeekMode = ref({})
+// 是否显示单周/多周切换按钮
+const showMultiWeekToggle = ref(false)
 
 // 判断是否多周
 function isMultiWeek(dayIdx, periodIdx) {
@@ -301,6 +303,11 @@ function setSlotValue(dayIdx, periodIdx, val) {
     </NCard>
 
     <NCard title="课表配置">
+      <template #header-extra>
+        <NButton size="small" text @click="showMultiWeekToggle = !showMultiWeekToggle">
+          {{ showMultiWeekToggle ? '隐藏轮换按钮' : '显示轮换按钮' }}
+        </NButton>
+      </template>
       <div v-if="dataLoaded" class="schedule-table-wrap">
         <table class="schedule-table">
           <thead>
@@ -343,6 +350,7 @@ function setSlotValue(dayIdx, periodIdx, val) {
                       @update:value="(val) => setSlotValue(d, p - 1, val)"
                     />
                     <NButton
+                      v-if="showMultiWeekToggle"
                       size="tiny"
                       text
                       :type="isMultiWeek(d, p - 1) ? 'primary' : 'default'"
