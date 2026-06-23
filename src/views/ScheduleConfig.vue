@@ -18,13 +18,13 @@ import {useRequest} from "vue-request";
 import {useRoute} from "vue-router";
 
 const route = useRoute();
-const week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-let optionsLst = ref([])
-let subjectsOptionsLst = ref([])
+const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 const school = computed(() => route.params.school);
 const grade = computed(() => route.params.grade);
 const cls = computed(() => route.params.cls);
-let needs = {}
+const optionsLst = ref([])
+const subjectsOptionsLst = ref([])
+const needs = ref({})
 
 const dynamicForm = reactive({
   daily_class: [
@@ -40,6 +40,7 @@ const dynamicForm = reactive({
 
 const showModal = ref(false);
 const saving = ref(false);
+const dataLoaded = ref(false);
 
 function submit() {
   showModal.value = true;
@@ -70,8 +71,6 @@ const getSchedule = () => axios.get(`${APISRV}/web/config/${school.value}/${grad
 const getOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/timetable/options`);
 const getSubjectsOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/subjects/options`);
 
-const dataLoaded = ref(false);
-
 useRequest(getSchedule, {
   refreshDeps: [school, grade, cls],
   initialData: { daily_class: dynamicForm.daily_class },
@@ -86,10 +85,12 @@ useRequest(getOptions, {
   initialData: { options: [] },
   onSuccess: (response) => {
     optionsLst.value = []
+    const n = {}
     for (const datumElement of response.data['options']) {
       optionsLst.value.push({ label: datumElement['label'], value: datumElement['value'] })
-      needs[datumElement['label']] = datumElement['need']
+      n[datumElement['label']] = datumElement['need']
     }
+    needs.value = n
   }
 });
 
@@ -104,68 +105,50 @@ useRequest(getSubjectsOptions, {
   }
 });
 
-// 计算最大节数
+// 最大节数
 const maxPeriods = computed(() => {
   let max = 0
   for (const day of dynamicForm.daily_class) {
-    const n = needs[day.timetable] || 0
+    const n = needs.value[day.timetable] || 0
     if (n > max) max = n
   }
   return max
 })
 
+// 构建行数据：每行是一个节次
+const tableData = computed(() => {
+  const rows = []
+  for (let p = 0; p < maxPeriods.value; p++) {
+    rows.push({ period: p + 1 })
+  }
+  return rows
+})
+
+// 构建列：节次 + 周日~周六
 function getColumns() {
   const cols = [
-    {
-      title: '星期',
-      key: 'day',
-      width: 80,
-      fixed: 'left',
-      render(row) {
-        return h('strong', row.Chinese)
-      }
-    },
-    {
-      title: '作息表',
-      key: 'timetable',
-      width: 140,
-      fixed: 'left',
-      render(row, index) {
-        return h(NSelect, {
-          value: row.timetable,
-          options: optionsLst.value,
-          size: 'small',
-          placeholder: '选择作息表',
-          onUpdateValue(val) {
-            row.timetable = val
-            // 重新计算 classList 长度
-            const need = needs[val] || 0
-            const old = row.classList || []
-            row.classList = Array.from({length: need}, (_, i) => old[i] || '')
-          }
-        })
-      }
-    }
+    { title: '节次', key: 'period', width: 70, fixed: 'left', align: 'center' }
   ]
 
-  // 动态生成节次列
-  for (let i = 0; i < maxPeriods.value; i++) {
-    const periodIdx = i
+  for (let d = 0; d < 7; d++) {
+    const dayIdx = d
     cols.push({
-      title: `第${i + 1}节`,
-      key: `period_${i}`,
-      width: 120,
-      render(row, index) {
-        const need = needs[row.timetable] || 0
+      title: `周${weekDays[d]}`,
+      key: `day_${d}`,
+      width: 130,
+      render(row) {
+        const day = dynamicForm.daily_class[dayIdx]
+        const need = needs.value[day.timetable] || 0
+        const periodIdx = row.period - 1
         if (periodIdx >= need) return h('span', {style: 'opacity: 0.3;'}, '-')
-        const val = (row.classList || [])[periodIdx] || null
+        const val = (day.classList || [])[periodIdx] || null
         return h(NSelect, {
           value: val,
           options: subjectsOptionsLst.value,
           size: 'small',
           placeholder: '选科目',
           onUpdateValue(val) {
-            row.classList[periodIdx] = val
+            day.classList[periodIdx] = val
           }
         })
       }
@@ -173,6 +156,31 @@ function getColumns() {
   }
 
   return cols
+}
+
+// 作息表行（嵌在表头上方或用额外行展示）
+function getTimetableRow() {
+  return h('tr', {}, [
+    h('td', {style: 'font-weight: 600; text-align: center;'}, '作息表'),
+    ...weekDays.map((_, d) => {
+      return h('td', {}, [
+        h(NSelect, {
+          value: dynamicForm.daily_class[d].timetable,
+          options: optionsLst.value,
+          size: 'small',
+          placeholder: '作息表',
+          style: 'width: 100%;',
+          onUpdateValue(val) {
+            const day = dynamicForm.daily_class[d]
+            day.timetable = val
+            const need = needs.value[val] || 0
+            const old = day.classList || []
+            day.classList = Array.from({length: need}, (_, i) => old[i] || '')
+          }
+        })
+      ])
+    })
+  ])
 }
 
 const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
@@ -195,15 +203,51 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
     </NCard>
 
     <NCard title="课表配置">
-      <NDataTable
-        v-if="dataLoaded"
-        :columns="getColumns()"
-        :data="dynamicForm.daily_class"
-        :bordered="true"
-        :single-line="false"
-        size="small"
-        :scroll-x="800"
-      />
+      <div v-if="dataLoaded" class="schedule-table-wrap">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;"></th>
+              <th v-for="(day, d) in weekDays" :key="d">周{{ day }}</th>
+            </tr>
+            <tr class="timetable-row">
+              <td class="row-label">作息表</td>
+              <td v-for="(day, d) in weekDays" :key="d">
+                <NSelect
+                  :value="dynamicForm.daily_class[d].timetable"
+                  :options="optionsLst"
+                  size="small"
+                  placeholder="选择"
+                  @update:value="(val) => {
+                    const dc = dynamicForm.daily_class[d]
+                    dc.timetable = val
+                    const need = needs[val] || 0
+                    const old = dc.classList || []
+                    dc.classList = Array.from({length: need}, (_, i) => old[i] || '')
+                  }"
+                />
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in maxPeriods" :key="p">
+              <td class="row-label">第{{ p }}节</td>
+              <td v-for="(day, d) in weekDays" :key="d">
+                <template v-if="(needs[dynamicForm.daily_class[d].timetable] || 0) >= p">
+                  <NSelect
+                    :value="(dynamicForm.daily_class[d].classList || [])[p - 1] || null"
+                    :options="subjectsOptionsLst"
+                    size="small"
+                    placeholder="选科目"
+                    @update:value="(val) => { dynamicForm.daily_class[d].classList[p - 1] = val }"
+                  />
+                </template>
+                <span v-else class="empty-cell">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div v-else style="text-align: center; padding: 40px; opacity: 0.5;">加载中...</div>
 
       <div class="submit-area">
@@ -225,6 +269,45 @@ const previewCode = computed(() => JSON.stringify(dynamicForm, null, 2));
 </template>
 
 <style scoped>
+.schedule-table-wrap {
+  overflow-x: auto;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.schedule-table th,
+.schedule-table td {
+  border: 1px solid var(--n-border-color, #e0e0e6);
+  padding: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.schedule-table th {
+  font-weight: 600;
+  background: var(--n-card-color, #fafafa);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.timetable-row td {
+  background: var(--n-card-color, #fafafa);
+}
+
+.row-label {
+  font-weight: 500;
+  width: 70px;
+}
+
+.empty-cell {
+  opacity: 0.3;
+}
+
 .submit-area {
   display: flex;
   justify-content: center;
