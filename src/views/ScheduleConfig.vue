@@ -239,9 +239,9 @@ function toggleMultiWeek(dayIdx, periodIdx) {
   const day = dynamicForm.daily_class[dayIdx]
   const slot = (day.classList || [])[periodIdx] || []
   if (slot.length <= 1) {
-    // 切换为多周：保留第一个，第二个留空
+    // 切换为多周：只保留当前科目
     const current = slot[0] || ''
-    day.classList[periodIdx] = current ? [current, ''] : ['']
+    day.classList[periodIdx] = current ? [current] : []
   } else {
     // 切换为单周：只保留第一个
     day.classList[periodIdx] = [slot[0] || '']
