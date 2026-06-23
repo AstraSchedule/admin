@@ -1,6 +1,6 @@
 <script setup>
 import {h, ref, watch} from 'vue'
-import {NButton, NCard, NDataTable, NInput, NSpace, useMessage} from 'naive-ui'
+import {NButton, NCard, NDataTable, NInput, NSpace, NTag, useMessage} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {useRouter} from 'vue-router'
 import ScopeTags from '@/components/ScopeTags.vue'
@@ -61,25 +61,26 @@ function onEdit(row) {
   router.push(`/countdown/edit/${row.id}`)
 }
 
+const statusTypeMap = {'已过期': 'error', '生效中': 'success', '就是今天': 'warning', '未知': 'default'}
+
+function renderStatus(status) {
+  const type = statusTypeMap[status] || 'default'
+  return h(NTag, {size: 'small', bordered: false, type}, {default: () => status})
+}
+
 const columns = [
   {title: '唯一ID', key: 'id', ellipsis: {tooltip: true}},
   {title: '生效域', key: 'scope', render: (row) => h(ScopeTags, {scopes: row.scope})},
+  {
+    title: '状态', key: 'status', width: 100, align: 'center',
+    render: (row) => renderStatus(row.status)
+  },
   {
     title: '日程数量',
     key: 'count',
     width: 100,
     align: 'center',
     render: (row) => String(Array.isArray(row.schedules) ? row.schedules.length : 0)
-  },
-  {
-    title: '预览',
-    key: 'preview',
-    ellipsis: {tooltip: true},
-    render: (row) => {
-      const list = Array.isArray(row.schedules) ? row.schedules : []
-      if (list.length === 0) return '（空）'
-      return list.slice(0, 3).map(it => `${it.name}(${it.date},P${it.priority ?? 0})`).join('；')
-    }
   },
   {
     title: '快捷操作',
@@ -99,6 +100,21 @@ const columns = [
     })
   }
 ]
+
+const expandedRowKeys = ref([])
+
+function renderScheduleRow(sch) {
+  return h('div', {style: 'padding: 8px 0;'}, [
+    h(NSpace, {align: 'center', size: 12}, {
+      default: () => [
+        h(NTag, {size: 'small', bordered: false}, {default: () => sch.name}),
+        h('span', {style: 'font-size: 13px; opacity: 0.7;'}, sch.date),
+        h(NTag, {size: 'small', bordered: false, type: 'info'}, {default: () => `P${sch.priority ?? 0}`}),
+        renderStatus(sch.status)
+      ]
+    })
+  ])
+}
 
 const filteredRows = ref([])
 
@@ -135,7 +151,23 @@ watch(keyword, () => {
       </n-space>
     </template>
 
-    <n-data-table :columns="columns" :data="filteredRows" :loading="loading" :pagination="false"/>
+    <n-data-table
+      :columns="columns"
+      :data="filteredRows"
+      :loading="loading"
+      :pagination="false"
+      v-model:expanded-row-keys="expandedRowKeys"
+      :row-key="(row) => row.id"
+    >
+      <template #expanded-row="{ row }">
+        <div style="padding: 8px 16px;">
+          <div v-if="!row.schedules || row.schedules.length === 0" style="opacity: 0.5;">暂无日程</div>
+          <div v-for="(sch, idx) in (row.schedules || [])" :key="idx">
+            {{ renderScheduleRow(sch) }}
+          </div>
+        </div>
+      </template>
+    </n-data-table>
 
     <confirm-password-modal
         :loading="deleting"
