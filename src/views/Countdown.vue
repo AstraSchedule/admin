@@ -69,6 +69,7 @@ function renderStatus(status) {
 }
 
 const columns = [
+  {type: 'expand', expandable: (row) => row.schedules && row.schedules.length > 0},
   {title: '唯一ID', key: 'id', ellipsis: {tooltip: true}},
   {title: '生效域', key: 'scope', render: (row) => h(ScopeTags, {scopes: row.scope})},
   {
