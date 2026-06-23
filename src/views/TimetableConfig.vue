@@ -427,3 +427,21 @@ function validateAll(){
     </n-modal>
   </NFlex>
 </template>
+
+<style scoped>
+:deep(.n-collapse-item) {
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+:deep(.n-collapse-item__header) {
+    font-weight: 500;
+    background: var(--bg-page);
+}
+
+.center {
+    max-width: 800px;
+    margin: 0 auto;
+}
+</style>
