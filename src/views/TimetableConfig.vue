@@ -260,6 +260,17 @@ useRequest(
 // 预览
 const preview = computed(() => JSON.stringify(buildPayload(), null, 2))
 
+// ---------- 收起/展开 ----------
+const collapsedTimetables = ref([])
+function toggleCollapse(tIdx) {
+  const idx = collapsedTimetables.value.indexOf(tIdx)
+  if (idx >= 0) {
+    collapsedTimetables.value.splice(idx, 1)
+  } else {
+    collapsedTimetables.value.push(tIdx)
+  }
+}
+
 // ---------- 自动填充与校验 ----------
 function normalizeTimetable(timetable, silent=false){
   const segs = timetable.segments
@@ -522,24 +533,32 @@ function getSegmentColumns(tIdx) {
 
       <div v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" class="timetable-block">
         <div class="timetable-header">
-          <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" />
+          <div class="timetable-title">
+            <NButton text size="small" @click="toggleCollapse(tIdx)">
+              {{ collapsedTimetables.includes(tIdx) ? '▶' : '▼' }}
+            </NButton>
+            <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" />
+            <span class="segment-count">{{ tb.segments.length }} 段</span>
+          </div>
           <NButton size="small" type="error" text @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
             删除此作息
           </NButton>
         </div>
 
-        <NDataTable
-          :columns="getSegmentColumns(tIdx)"
-          :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
-          :bordered="true"
-          :single-line="false"
-          size="small"
-          class="segment-table"
-        />
+        <div v-show="!collapsedTimetables.includes(tIdx)">
+          <NDataTable
+            :columns="getSegmentColumns(tIdx)"
+            :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
+            :bordered="true"
+            :single-line="false"
+            size="small"
+            class="segment-table"
+          />
 
-        <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
-          + 增加时间段
-        </NButton>
+          <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
+            + 增加时间段
+          </NButton>
+        </div>
       </div>
 
       <NButton type="primary" dashed @click="addTimetable" style="margin-top: 16px;">
@@ -582,6 +601,17 @@ function getSegmentColumns(tIdx) {
     margin-bottom: 12px;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.timetable-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.segment-count {
+    font-size: 12px;
+    opacity: 0.5;
 }
 
 .segment-table {
