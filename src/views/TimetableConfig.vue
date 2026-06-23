@@ -107,9 +107,27 @@ function buildPayload() {
 }
 
 // ---------- 动态增删 ----------
-function addTimetable() {
-  // 基准：优先找名为“常日”，否则第一个
-  const base = dynamicForm.timetables.find(t => t.name === '常日') || dynamicForm.timetables[0]
+const showCopyFromModal = ref(false)
+const copyFromIndex = ref(0)
+
+function openAddTimetable() {
+  if (dynamicForm.timetables.length === 0) {
+    // 没有模板，直接创建空的
+    addTimetableDirect(0)
+  } else {
+    // 默认选第一个
+    copyFromIndex.value = 0
+    showCopyFromModal.value = true
+  }
+}
+
+function confirmAddTimetable() {
+  addTimetableDirect(copyFromIndex.value)
+  showCopyFromModal.value = false
+}
+
+function addTimetableDirect(fromIdx) {
+  const base = dynamicForm.timetables[fromIdx] || dynamicForm.timetables[0]
   const clonedSegments = base ? base.segments.map(s => ({
     start: s.start,
     end: s.end,
@@ -123,8 +141,8 @@ function addTimetable() {
     segments: clonedSegments,
     dividerInput: clonedDivider
   })
-  expandedTimetables.value.push(dynamicForm.timetables.length -1)
-  normalizeTimetable(dynamicForm.timetables[dynamicForm.timetables.length -1], true)
+  expandedTimetables.value.push(dynamicForm.timetables.length - 1)
+  normalizeTimetable(dynamicForm.timetables[dynamicForm.timetables.length - 1], true)
 }
 function removeTimetable(idx) {
   dynamicForm.timetables.splice(idx, 1)
@@ -554,7 +572,7 @@ function getSegmentColumns(tIdx) {
         </NCollapseItem>
       </NCollapse>
 
-      <NButton type="primary" dashed @click="addTimetable" style="margin-top: 16px;">
+      <NButton type="primary" dashed @click="openAddTimetable" style="margin-top: 16px;">
         + 增加作息模板
       </NButton>
 
@@ -574,6 +592,16 @@ function getSegmentColumns(tIdx) {
       confirm-text="确认提交"
       @confirm="okay"
     />
+    <NModal v-model:show="showCopyFromModal" preset="dialog" title="从哪个模板复制？">
+      <NSelect
+        v-model:value="copyFromIndex"
+        :options="dynamicForm.timetables.map((t, i) => ({ label: t.name, value: i }))"
+        placeholder="选择模板"
+      />
+      <template #action>
+        <NButton type="primary" @click="confirmAddTimetable">确认</NButton>
+      </template>
+    </NModal>
   </NFlex>
 </template>
 
