@@ -433,7 +433,7 @@ function getSegmentColumns(tIdx) {
         const seg = tb.segments[row._idx]
         return h(NRadioGroup, {
           value: seg.valueType,
-          size: 'small',
+          size: 'medium',
           onUpdateValue() {
             seg.valueType = seg.valueType === 'text' ? 'index' : 'text'
             onValueTypeChange(tb)
@@ -471,7 +471,7 @@ function getSegmentColumns(tIdx) {
       }
     },
     {
-      title: '分隔线',
+      title: '在此之后插入分隔线',
       key: 'divider',
       width: 70,
       align: 'center',
@@ -493,17 +493,17 @@ function getSegmentColumns(tIdx) {
         return h(NSpace, { justify: 'center', size: 12 }, {
           default: () => [
             h(NTooltip, null, {
-              trigger: () => h(NButton, { size: 'small', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
+              trigger: () => h(NButton, { size: 'large', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
               default: () => '在上方插入'
             }),
             h(NTooltip, null, {
-              trigger: () => h(NButton, { size: 'small', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
+              trigger: () => h(NButton, { size: 'large', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
               default: () => '在下方插入'
             }),
             h(NPopconfirm, {
               onPositiveClick: () => removeSegment(tb, row._idx)
             }, {
-              trigger: () => h(NButton, { size: 'small', text: true, type: 'error' }, { default: () => '删除' }),
+              trigger: () => h(NButton, { size: 'large', text: true, type: 'error' }, { default: () => '删除' }),
               default: () => '确认删除此段？'
             })
           ]
@@ -538,7 +538,7 @@ function getSegmentColumns(tIdx) {
         <NCollapseItem v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" :name="tIdx">
           <template #header>
             <div class="collapse-header">
-              <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 150px;" size="small" @click.stop />
+              <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 200px;" @click.stop />
               <span class="segment-count">{{ tb.segments.length }} 段</span>
               <NButton size="small" type="error" text @click.stop="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'">
                 删除
@@ -610,24 +610,5 @@ function getSegmentColumns(tIdx) {
     margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid var(--n-border-color, #e0e0e6);
-}
-
-/* 收起/展开过渡动画 */
-.collapse-enter-active,
-.collapse-leave-active {
-    transition: all 0.2s ease;
-    overflow: hidden;
-}
-
-.collapse-enter-from,
-.collapse-leave-to {
-    opacity: 0;
-    max-height: 0;
-}
-
-.collapse-enter-to,
-.collapse-leave-from {
-    opacity: 1;
-    max-height: 1000px;
 }
 </style>
