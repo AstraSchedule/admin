@@ -22,15 +22,12 @@ function onConfirm() {
 
 <template>
   <n-modal :show="props.show" :title="props.title" preset="dialog" @update:show="val=>emit('update:show', val)">
-    <n-space vertical>
-      <div>此操作需要密码</div>
-      <n-input v-model:value="pwd" clearable placeholder="输入密码" type="password"/>
+    <n-space vertical size="large">
+      <div style="color: var(--text-secondary);">此操作需要密码</div>
+      <n-input v-model:value="pwd" clearable placeholder="输入密码" type="password" @keyup.enter="onConfirm" />
     </n-space>
     <template #action>
       <n-button :loading="props.loading" type="primary" @click="onConfirm">{{ props.confirmText }}</n-button>
     </template>
   </n-modal>
 </template>
-
-
-

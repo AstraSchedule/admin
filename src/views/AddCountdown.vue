@@ -10,6 +10,7 @@ import {
   NFormItem,
   NInput,
   NInputNumber,
+  NPopconfirm,
   NSelect,
   NSpace,
   useMessage
@@ -196,7 +197,12 @@ function onCancel() {
               <n-form-item label="优先级">
                 <n-input-number v-model:value="item.priority" :show-button="false"/>
               </n-form-item>
-              <n-button tertiary type="error" @click="removeItem(index)">删除该条</n-button>
+              <n-popconfirm @positive-click="removeItem(index)" negative-text="取消" positive-text="确认">
+                <template #trigger>
+                  <n-button tertiary type="error">删除该条</n-button>
+                </template>
+                确认删除此日程？
+              </n-popconfirm>
             </n-space>
           </n-card>
 

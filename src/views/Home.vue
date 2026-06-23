@@ -152,14 +152,18 @@ useThemeVars();
 <template>
     <div class="home-container">
         <div v-if="isInitialLoading" class="centered">
-            <NSpin size="large" description="加载中..." />
+            <n-spin size="large">
+                <div style="padding: 50px; text-align: center; color: var(--text-tertiary);">
+                    正在获取数据...
+                </div>
+            </n-spin>
         </div>
         <div v-else-if="isServerless" class="centered">
             <NResult
                 v-if="!showHitokoto"
                 status="418"
                 title="星程课表 | AstraSchedule"
-                description="灵活部署 · 智能调休 · 集中管控 · 兼容 Windows 7"
+                description="星辰落旧室，星程起新程"
             >
                 <template #icon>
                     <img src="https://image-hk-1.oss-accelerate.aliyuncs.com/icon.png" alt="星程课表" style="width: 80px; height: 80px;" />
@@ -209,16 +213,39 @@ useThemeVars();
     height: 100%;
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-lg);
 }
+
 .centered {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
 }
+
 .content {
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.stat {
+    max-width: 300px;
+    min-width: 200px;
+    border-radius: var(--radius-lg) !important;
+}
+
+.stat :deep(.n-statistic__label) {
+    font-size: 13px;
+}
+
+.stat :deep(.n-statistic__value) {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.stat :deep(.n-card__content) {
+    padding: var(--spacing-lg);
 }
 </style>

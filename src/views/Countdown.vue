@@ -1,6 +1,6 @@
 <script setup>
 import {h, ref, watch} from 'vue'
-import {NButton, NCard, NDataTable, NInput, NSpace, useMessage} from 'naive-ui'
+import {NButton, NCard, NDataTable, NInput, NSpace, NTag, useMessage} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {useRouter} from 'vue-router'
 import ScopeTags from '@/components/ScopeTags.vue'
@@ -61,25 +61,52 @@ function onEdit(row) {
   router.push(`/countdown/edit/${row.id}`)
 }
 
+const statusTypeMap = {'已过期': 'error', '生效中': 'success', '就是今天': 'warning', '未知': 'default'}
+
+function renderStatus(status) {
+  const type = statusTypeMap[status] || 'default'
+  return h(NTag, {size: 'small', bordered: false, type}, {default: () => status})
+}
+
 const columns = [
+  {
+    type: 'expand',
+    expandable: (row) => row.schedules && row.schedules.length > 0,
+    renderExpand: (row) => {
+      const scheduleColumns = [
+        {title: '名称', key: 'name'},
+        {title: '日期', key: 'date', width: 120},
+        {title: '优先级', key: 'priority', width: 80, align: 'center'},
+        {
+          title: '状态', key: 'status', width: 100, align: 'center',
+          render: (r) => renderStatus(r.status)
+        }
+      ]
+      return h(NDataTable, {
+        columns: scheduleColumns,
+        data: row.schedules || [],
+        bordered: true,
+        size: 'small',
+        singleLine: false
+      })
+    }
+  },
   {title: '唯一ID', key: 'id', ellipsis: {tooltip: true}},
   {title: '生效域', key: 'scope', render: (row) => h(ScopeTags, {scopes: row.scope})},
+  {
+    title: '状态', key: 'status', width: 100, align: 'center',
+    render: (row) => {
+      const s = row.status || '未知'
+      const type = statusTypeMap[s] || 'default'
+      return h(NTag, {size: 'small', bordered: false, type: type}, {default: () => s})
+    }
+  },
   {
     title: '日程数量',
     key: 'count',
     width: 100,
     align: 'center',
     render: (row) => String(Array.isArray(row.schedules) ? row.schedules.length : 0)
-  },
-  {
-    title: '预览',
-    key: 'preview',
-    ellipsis: {tooltip: true},
-    render: (row) => {
-      const list = Array.isArray(row.schedules) ? row.schedules : []
-      if (list.length === 0) return '（空）'
-      return list.slice(0, 3).map(it => `${it.name}(${it.date},P${it.priority ?? 0})`).join('；')
-    }
   },
   {
     title: '快捷操作',
@@ -99,6 +126,8 @@ const columns = [
     })
   }
 ]
+
+const expandedRowKeys = ref([])
 
 const filteredRows = ref([])
 
@@ -135,7 +164,26 @@ watch(keyword, () => {
       </n-space>
     </template>
 
-    <n-data-table :columns="columns" :data="filteredRows" :loading="loading" :pagination="false"/>
+    <n-data-table
+      :columns="columns"
+      :data="filteredRows"
+      :loading="loading"
+      :pagination="false"
+      v-model:expanded-row-keys="expandedRowKeys"
+      :row-key="(row) => row.id"
+    >
+      <template #expanded-row="{ row }">
+        <div style="padding: 8px 16px;">
+          <div v-if="!row.schedules || row.schedules.length === 0" style="opacity: 0.5;">暂无日程</div>
+          <div v-for="(sch, idx) in (row.schedules || [])" :key="idx" style="padding: 6px 0; display: flex; align-items: center; gap: 12px;">
+            <n-tag size="small" :bordered="false">{{ sch.name }}</n-tag>
+            <span style="font-size: 13px; opacity: 0.7;">{{ sch.date }}</span>
+            <n-tag size="small" :bordered="false" type="info">P{{ sch.priority ?? 0 }}</n-tag>
+            <n-tag size="small" :bordered="false" :type="statusTypeMap[sch.status] || 'default'">{{ sch.status }}</n-tag>
+          </div>
+        </div>
+      </template>
+    </n-data-table>
 
     <confirm-password-modal
         :loading="deleting"
@@ -147,3 +195,9 @@ watch(keyword, () => {
     />
   </n-card>
 </template>
+
+<style scoped>
+:deep(.n-data-table th) {
+    font-weight: 600;
+}
+</style>

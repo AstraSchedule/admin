@@ -2,9 +2,11 @@
 import {
   NButton,
   NCard,
-  NCode,
+  NCheckbox,
   NCollapse,
   NCollapseItem,
+  NCode,
+  NDataTable,
   NDatePicker,
   NFlex,
   NForm,
@@ -12,23 +14,26 @@ import {
   NInput,
   NInputNumber,
   NModal,
+  NPopconfirm,
   NRadioButton,
   NRadioGroup,
+  NSelect,
   NSpace,
   NStatistic,
+  NTooltip,
   useMessage
 } from 'naive-ui'
-import {computed, reactive, ref} from 'vue'
+import {computed, h, reactive, ref} from 'vue'
 import axios from 'axios'
 import {APISRV} from '@/global.js'
 import {useRequest} from 'vue-request'
 import {useRoute} from 'vue-router'
+import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
 
 const route = useRoute()
 const school = computed(() => route.params.school)
 const grade = computed(() => route.params.grade)
 const formRef = ref(null)
-const pwd = ref('')
 
 // 编辑内部结构：
 // timetables: [ { name: '常日', segments: [ { start:'00:00', end:'07:09', valueType:'text', text:'早自习', index:null }, { start:'07:10', end:'07:49', valueType:'index', index:0 } ], dividerInput: '0,4,7' } ]
@@ -103,9 +108,27 @@ function buildPayload() {
 }
 
 // ---------- 动态增删 ----------
-function addTimetable() {
-  // 基准：优先找名为“常日”，否则第一个
-  const base = dynamicForm.timetables.find(t => t.name === '常日') || dynamicForm.timetables[0]
+const showCopyFromModal = ref(false)
+const copyFromIndex = ref(0)
+
+function openAddTimetable() {
+  if (dynamicForm.timetables.length === 0) {
+    // 没有模板，直接创建空的
+    addTimetableDirect(0)
+  } else {
+    // 默认选第一个
+    copyFromIndex.value = 0
+    showCopyFromModal.value = true
+  }
+}
+
+function confirmAddTimetable() {
+  addTimetableDirect(copyFromIndex.value)
+  showCopyFromModal.value = false
+}
+
+function addTimetableDirect(fromIdx) {
+  const base = dynamicForm.timetables[fromIdx] || dynamicForm.timetables[0]
   const clonedSegments = base ? base.segments.map(s => ({
     start: s.start,
     end: s.end,
@@ -119,8 +142,8 @@ function addTimetable() {
     segments: clonedSegments,
     dividerInput: clonedDivider
   })
-  expandedTimetables.value.push(dynamicForm.timetables.length -1)
-  normalizeTimetable(dynamicForm.timetables[dynamicForm.timetables.length -1], true)
+  expandedTimetables.value.push(dynamicForm.timetables.length - 1)
+  normalizeTimetable(dynamicForm.timetables[dynamicForm.timetables.length - 1], true)
 }
 function removeTimetable(idx) {
   dynamicForm.timetables.splice(idx, 1)
@@ -157,51 +180,34 @@ function insertSegmentBelow(timetable, idx){
 }
 
 // ---------- 交互 ----------
-let showModal = ref(false)
-let disabledButton = ref(false)
-let buttonText = ref('确认提交')
+const showModal = ref(false)
+const saving = ref(false)
 function submit() {
-  if(!validateAll()) return; // 有错误直接返回
+  if(!validateAll()) return;
   showModal.value = true
 }
 
 const messages = useMessage()
 
 // ---------- 请求 ----------
-const putTimetable = () => {
-  const payload = buildPayload()
-  return Promise.resolve(
-    axios.put(
+async function okay(password) {
+  saving.value = true
+  try {
+    const payload = buildPayload()
+    await axios.put(
       `${APISRV}/web/config/${school.value}/${grade.value}/timetable`,
       payload,
-      {
-        auth: { username: 'ElectronClassSchedule', password: pwd.value }
-      }
+      { auth: { username: 'ElectronClassSchedule', password } }
     )
-  )
-}
-
-function okay() {
-  disabledButton.value = true
-  buttonText.value = '你等会儿'
-  useRequest(
-    putTimetable,
-    {
-      onSuccess: (response) => {
-        console.log(response.data)
-        messages.success('服务端说行')
-        showModal.value = false
-      },
-      onError: (error) => {
-        console.log(error)
-        if (error.status === 401) messages.error('你寻思寻思这密码它对吗？')
-        else if (error.status === 400) messages.error('码姿不对，删了重写！（服务端校验不通过）')
-        else messages.error(`服务端看完天塌了（状态码：${error}）`)
-      }
-    }
-  )
-  buttonText.value = '确认提交'
-  disabledButton.value = false
+    messages.success('服务端说行')
+    showModal.value = false
+  } catch (error) {
+    if (error.status === 401) messages.error('你寻思寻思这密码它对吗？')
+    else if (error.status === 400) messages.error('码姿不对，删了重写！（服务端校验不通过）')
+    else messages.error(`服务端看完天塌了（状态码：${error}）`)
+  } finally {
+    saving.value = false
+  }
 }
 
 const getTimetable = () => {
@@ -243,6 +249,14 @@ useRequest(
         const dividerInput = (data.divider && data.divider[name]) ? data.divider[name].join(',') : ''
         dynamicForm.timetables.push({ name, segments, dividerInput })
       }
+      // 常日排到最前面
+      dynamicForm.timetables.sort((a, b) => {
+        if (a.name === '常日') return -1
+        if (b.name === '常日') return 1
+        return 0
+      })
+      // 默认全部收起（expandedTimetables 为空即全部收起）
+      expandedTimetables.value = []
       if (dynamicForm.timetables.length === 0) {
         dynamicForm.timetables.push({ name: '常日', segments: [], dividerInput: '' })
       }
@@ -252,9 +266,9 @@ useRequest(
 
 // 预览
 const preview = computed(() => JSON.stringify(buildPayload(), null, 2))
-const expandedTimetables = ref([0])
-function expandAllTimetables(){ expandedTimetables.value = dynamicForm.timetables.map((_,i)=>i) }
-function collapseAllTimetables(){ expandedTimetables.value = [] }
+
+// ---------- 收起/展开 ----------
+const expandedTimetables = ref([])
 
 // ---------- 自动填充与校验 ----------
 function normalizeTimetable(timetable, silent=false){
@@ -321,6 +335,187 @@ function validateAll(){
   }
   return allOk
 }
+
+// ---------- 分隔线辅助 ----------
+// divider 存储的是"课程序号"（0-based），不是行索引
+// 需要在行索引和课程序号之间转换
+
+// 行索引 → 课程序号（仅 valueType==='index' 的行才有课程序号）
+function rowToLessonIndex(tb, rowIdx) {
+  let lessonIdx = -1
+  for (let i = 0; i <= rowIdx; i++) {
+    if (tb.segments[i].valueType === 'index') {
+      lessonIdx++
+    }
+  }
+  return lessonIdx
+}
+
+// 课程序号 → 行索引
+function lessonIndexToRow(tb, lessonIdx) {
+  let count = -1
+  for (let i = 0; i < tb.segments.length; i++) {
+    if (tb.segments[i].valueType === 'index') {
+      count++
+      if (count === lessonIdx) return i
+    }
+  }
+  return -1
+}
+
+function isDivider(tb, rowIdx) {
+  if (!tb.dividerInput || tb.dividerInput.trim() === '') return false
+  const arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+  const lessonIdx = rowToLessonIndex(tb, rowIdx)
+  return arr.includes(lessonIdx)
+}
+
+function toggleDivider(tb, rowIdx) {
+  let arr = []
+  if (tb.dividerInput && tb.dividerInput.trim() !== '') {
+    arr = tb.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+  }
+  const lessonIdx = rowToLessonIndex(tb, rowIdx)
+  const idx = arr.indexOf(lessonIdx)
+  if (idx >= 0) {
+    arr.splice(idx, 1)
+  } else {
+    arr.push(lessonIdx)
+    arr.sort((a, b) => a - b)
+  }
+  tb.dividerInput = arr.join(',')
+}
+
+// ---------- 表格列定义 ----------
+function getSegmentColumns(tIdx) {
+  const tb = dynamicForm.timetables[tIdx]
+  return [
+    {
+      title: '#',
+      key: '_idx',
+      width: 50,
+      align: 'center',
+      render(row) { return row._idx + 1 }
+    },
+    {
+      title: '开始时间',
+      key: 'start',
+      width: 120,
+      render(row) {
+        const seg = tb.segments[row._idx]
+        return h(NInput, {
+          value: seg.start,
+          placeholder: '07:10',
+          size: 'small',
+          style: 'width: 90px;',
+          onUpdateValue(val) { onStartChange(tb, seg, val) }
+        })
+      }
+    },
+    {
+      title: '结束时间',
+      key: 'end',
+      width: 120,
+      render(row) {
+        const seg = tb.segments[row._idx]
+        return h(NInput, {
+          value: seg.end,
+          disabled: true,
+          placeholder: '自动',
+          size: 'small',
+          style: 'width: 90px;'
+        })
+      }
+    },
+    {
+      title: '值类型',
+      key: 'valueType',
+      width: 140,
+      render(row) {
+        const seg = tb.segments[row._idx]
+        return h(NRadioGroup, {
+          value: seg.valueType,
+          size: 'medium',
+          onUpdateValue() {
+            seg.valueType = seg.valueType === 'text' ? 'index' : 'text'
+            onValueTypeChange(tb)
+          }
+        }, {
+          default: () => [
+            h(NRadioButton, { value: 'text' }, { default: () => '文本' }),
+            h(NRadioButton, { value: 'index' }, { default: () => '课程序号' })
+          ]
+        })
+      }
+    },
+    {
+      title: '值',
+      key: 'value',
+      width: 180,
+      render(row) {
+        const seg = tb.segments[row._idx]
+        if (seg.valueType === 'text') {
+          return h(NInput, {
+            value: seg.text,
+            placeholder: '早自习 / 课间',
+            size: 'small',
+            onUpdateValue(val) { seg.text = val }
+          })
+        } else {
+          return h(NInputNumber, {
+            value: seg.index,
+            disabled: true,
+            placeholder: '自动',
+            size: 'small',
+            style: 'width: 90px;'
+          })
+        }
+      }
+    },
+    {
+      title: '在此之后插入分隔线',
+      key: 'divider',
+      width: 70,
+      align: 'center',
+      render(row) {
+        const seg = tb.segments[row._idx]
+        if (seg.valueType !== 'index') return '-'
+        return h(NCheckbox, {
+          checked: isDivider(tb, row._idx),
+          onUpdateChecked() { toggleDivider(tb, row._idx) }
+        })
+      }
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 150,
+      align: 'center',
+      render(row) {
+        return h(NSpace, { justify: 'center', size: 12 }, {
+          default: () => [
+            h(NTooltip, null, {
+              trigger: () => h(NButton, { size: 'large', text: true, onClick: () => insertSegmentAbove(tb, row._idx) }, { default: () => '↑' }),
+              default: () => '在上方插入'
+            }),
+            h(NTooltip, null, {
+              trigger: () => h(NButton, { size: 'large', text: true, onClick: () => insertSegmentBelow(tb, row._idx) }, { default: () => '↓' }),
+              default: () => '在下方插入'
+            }),
+            h(NPopconfirm, {
+              onPositiveClick: () => removeSegment(tb, row._idx),
+              negativeText: '取消',
+              positiveText: '确认'
+            }, {
+              trigger: () => h(NButton, { size: 'large', text: true, type: 'error' }, { default: () => '删除' }),
+              default: () => '确认删除此段？'
+            })
+          ]
+        })
+      }
+    }
+  ]
+}
 </script>
 
 <template>
@@ -337,93 +532,105 @@ function validateAll(){
     </NCard>
 
     <NCard title="配置表单">
-      <n-form ref="formRef" :model="dynamicForm" class="center">
-        <n-form-item label="开学日期 (start)">
-          <NDatePicker v-model:value="dynamicForm.start" type="date" />
-        </n-form-item>
-        <n-space style="margin-bottom:8px;">
-          <n-button size="small" @click="expandAllTimetables">全部展开</n-button>
-          <n-button size="small" @click="collapseAllTimetables">全部折叠</n-button>
-        </n-space>
-        <n-collapse multiple v-model:expanded-names="expandedTimetables">
-          <n-collapse-item
-            v-for="(tb, tIdx) in dynamicForm.timetables"
-            :key="tIdx"
-            :name="tIdx"
-            :title="tb.name + '  (' + tb.segments.length + ' 段)'"
-          >
-            <NCard size="small" :title="tb.name" style="margin-bottom:12px;">
-              <NSpace vertical>
-                <n-form-item :label="`作息名称`" :path="`timetables[${tIdx}].name`">
-                  <NInput v-model:value="tb.name" placeholder="例如：常日" />
-                  <NButton style="margin-left:12px" tertiary type="error" @click="removeTimetable(tIdx)" v-if="dynamicForm.timetables.length>1">删此作息</NButton>
-                </n-form-item>
-                <n-form-item :label="`Divider (逗号分隔课程序号)`" :path="`timetables[${tIdx}].dividerInput`">
-                  <NInput v-model:value="tb.dividerInput" placeholder="例如：0,4,7" />
-                </n-form-item>
-                <NCard size="small" title="时间段 (按开始时间顺序)" segmented>
-                  <NSpace vertical>
-                    <NCard size="small" v-for="(seg, sIdx) in tb.segments" :key="sIdx" :title="`#${sIdx+1}`">
-                      <NSpace vertical>
-                        <n-form-item :label="'时间段'" :path="`timetables[${tIdx}].segments[${sIdx}].start`">
-                          <NSpace align="center">
-                            <NInput style="width:90px" v-model:value="seg.start" placeholder="07:10" @update:value="val=>onStartChange(tb, seg, val)" />
-                            <span style="user-select:none;">~</span>
-                            <NInput style="width:90px" v-model:value="seg.end" disabled placeholder="自动" />
-                          </NSpace>
-                        </n-form-item>
-                        <n-form-item :label="'值类型'">
-                          <NRadioGroup v-model:value="seg.valueType" @update:value="()=>onValueTypeChange(tb)">
-                            <NRadioButton value="text">文本</NRadioButton>
-                            <NRadioButton value="index">课程序号</NRadioButton>
-                          </NRadioGroup>
-                        </n-form-item>
-                        <n-form-item v-if="seg.valueType==='text'" :label="'文本值'" :path="`timetables[${tIdx}].segments[${sIdx}].text`">
-                          <NInput v-model:value="seg.text" placeholder="早自习 / 课间 / 放学" />
-                        </n-form-item>
-                        <n-form-item v-else :label="'课程序号 (自动)'" :path="`timetables[${tIdx}].segments[${sIdx}].index`">
-                          <NInputNumber :value="seg.index" disabled placeholder="自动编号" />
-                        </n-form-item>
-                        <NSpace>
-                          <NButton size="tiny" tertiary @click="insertSegmentAbove(tb, sIdx)">上方插入</NButton>
-                          <NButton size="tiny" tertiary @click="insertSegmentBelow(tb, sIdx)">下方插入</NButton>
-                          <NButton size="tiny" type="error" tertiary @click="removeSegment(tb, sIdx)">删此段</NButton>
-                        </NSpace>
-                      </NSpace>
-                    </NCard>
-                    <NButton dashed type="primary" @click="addSegment(tb)">+ 增加时间段</NButton>
-                  </NSpace>
-                </NCard>
-              </NSpace>
-            </NCard>
-          </n-collapse-item>
-        </n-collapse>
-        <n-form-item>
-          <NButton type="primary" dashed @click="addTimetable">+ 增加作息模板</NButton>
-        </n-form-item>
-        <n-form-item class="center">
-          <n-flex justify="center" size="large" class="center">
-            <n-button attr-type="button" @click="submit">提交</n-button>
-          </n-flex>
+      <n-form ref="formRef" :model="dynamicForm">
+        <n-form-item label="开学日期">
+          <NDatePicker v-model:value="dynamicForm.start" type="date" style="width: 200px;" />
         </n-form-item>
       </n-form>
+
+      <NCollapse v-model:expanded-names="expandedTimetables" accordion>
+        <NCollapseItem v-for="(tb, tIdx) in dynamicForm.timetables" :key="tIdx" :name="tIdx">
+          <template #header>
+            <div class="collapse-header">
+              <NInput v-model:value="tb.name" placeholder="作息名称" style="width: 200px;" @click.stop />
+              <span class="segment-count">{{ tb.segments.length }} 段</span>
+              <NPopconfirm
+                v-if="dynamicForm.timetables.length > 1 && tb.name !== '常日'"
+                @positive-click="removeTimetable(tIdx)"
+                negative-text="取消"
+                positive-text="确认"
+              >
+                <template #trigger>
+                  <NButton size="small" type="error" text @click.stop>删除</NButton>
+                </template>
+                确认删除此作息模板？
+              </NPopconfirm>
+            </div>
+          </template>
+
+          <NDataTable
+            :columns="getSegmentColumns(tIdx)"
+            :data="tb.segments.map((seg, sIdx) => ({ ...seg, _idx: sIdx }))"
+            :bordered="true"
+            :single-line="false"
+            size="small"
+            class="segment-table"
+          />
+
+          <NButton dashed type="primary" size="small" @click="addSegment(tb)" style="margin-top: 8px;">
+            + 增加时间段
+          </NButton>
+        </NCollapseItem>
+      </NCollapse>
+
+      <NButton type="primary" dashed @click="openAddTimetable" style="margin-top: 16px;">
+        + 增加作息模板
+      </NButton>
+
+      <div class="submit-area">
+        <n-button type="primary" @click="submit">提交</n-button>
+      </div>
     </NCard>
 
     <NCard title="提交前预览">
       <n-code :code="preview" language="json" show-line-numbers />
     </NCard>
 
-    <n-modal v-model:show="showModal" preset="dialog" title="Dialog">
-      <template #header>
-        <div>你是入吗？</div>
-      </template>
-      <n-space vertical>
-        <div>此操作需要密码</div>
-        <n-input type="password" v-model:value="pwd" clearable />
-      </n-space>
+    <ConfirmPasswordModal
+      v-model:show="showModal"
+      :loading="saving"
+      title="你是入吗？"
+      confirm-text="确认提交"
+      @confirm="okay"
+    />
+    <NModal v-model:show="showCopyFromModal" preset="dialog" title="从哪个模板复制？">
+      <div style="padding: 8px 0;">
+        <NSelect
+          v-model:value="copyFromIndex"
+          :options="dynamicForm.timetables.map((t, i) => ({ label: t.name, value: i }))"
+          placeholder="选择模板"
+        />
+      </div>
       <template #action>
-        <n-button attr-type="button" @click="okay" :disabled="disabledButton">{{ buttonText }}</n-button>
+        <NButton type="primary" @click="confirmAddTimetable">确认</NButton>
       </template>
-    </n-modal>
+    </NModal>
   </NFlex>
 </template>
+
+<style scoped>
+.collapse-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.segment-count {
+    font-size: 12px;
+    opacity: 0.5;
+    margin-left: 8px;
+}
+
+.segment-table {
+    margin-bottom: 8px;
+}
+
+.submit-area {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--n-border-color, #e0e0e6);
+}
+</style>
