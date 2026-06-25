@@ -1,214 +1,176 @@
 <script setup>
-import {ref, computed} from 'vue'
+import {h, ref, onMounted} from 'vue'
 import {
-  NButton, NCard, NDataTable, NInput, NModal, NSpace, NTag, NTabs, NTabPane, useMessage, NPopconfirm
+  NButton, NCard, NEmpty, NInput, NModal, NSpace, NText, useMessage
 } from 'naive-ui'
-import {useRequest} from 'vue-request'
-import {fetchScopeTree} from '@/api/autorun.js'
+import axios from 'axios'
+import {APISRV} from '@/global.js'
 import {createSchool, deleteSchool, createGrade, deleteGrade, createClass, deleteClass} from '@/api/structure.js'
 import {verifyPassword} from '@/api/auth.js'
 
 const message = useMessage()
+const tree = ref([])
 
-const scopeTree = ref([])
-const {run: refreshTree} = useRequest(fetchScopeTree, {
-  manual: true,
-  onSuccess: (res) => { scopeTree.value = res?.data || [] },
-  onError: () => { scopeTree.value = [] }
-})
-refreshTree()
-
-const showCreateModal = ref(false)
-const createType = ref('school')
-const createParent = ref('')
-const createName = ref('')
-const createLoading = ref(false)
-const pwdModalShow = ref(false)
-const pwdModalLoading = ref(false)
-const pendingAction = ref(null)
-
-function openCreateSchool() {
-  createType.value = 'school'
-  createParent.value = ''
-  createName.value = ''
-  showCreateModal.value = true
+async function refreshTree() {
+  try {
+    const resp = await axios.get(`${APISRV}/web/structure`)
+    tree.value = resp.data || []
+  } catch (e) {
+    tree.value = []
+  }
 }
+onMounted(refreshTree)
 
-function openCreateGrade(school) {
-  createType.value = 'grade'
-  createParent.value = school
-  createName.value = ''
-  showCreateModal.value = true
-}
+const showModal = ref(false)
+const modalType = ref('school')
+const modalParent = ref('')
+const modalName = ref('')
+const modalLoading = ref(false)
+const pwdShow = ref(false)
+const pwdLoading = ref(false)
+const pwdInput = ref('')
+const savedPwd = ref('')
+let pendingFn = null
 
-function openCreateClass(school, grade) {
-  createType.value = 'class'
-  createParent.value = `${school}/${grade}`
-  createName.value = ''
-  showCreateModal.value = true
+function openCreate(type, parent = '', pwd = '') {
+  modalType.value = type
+  modalParent.value = parent
+  modalName.value = ''
+  showModal.value = true
+  // 链式创建：记住密码，创建时跳过验证
+  savedPwd.value = pwd
 }
 
 function doCreate() {
-  if (!createName.value.trim()) {
-    message.warning('名称不能为空')
-    return
+  if (!modalName.value.trim()) { message.warning('名称不能为空'); return }
+  const go = (pwd) => {
+    modalLoading.value = true
+    const cfg = {headers: {'X-Verify-Password': pwd}}
+    const p = modalParent.value
+    const createdName = modalName.value
+    const fn = modalType.value === 'school' ? createSchool(createdName, cfg)
+      : modalType.value === 'grade' ? createGrade(p, createdName, cfg)
+      : createClass(p.split('/')[0], p.split('/')[1], createdName, cfg)
+    fn.then(() => {
+      message.success('创建成功')
+      showModal.value = false
+      refreshTree()
+      if (modalType.value === 'school') {
+        setTimeout(() => openCreate('grade', createdName, pwd), 300)
+      } else if (modalType.value === 'grade') {
+        setTimeout(() => openCreate('class', p + '/' + createdName, pwd), 300)
+      }
+    })
+    .catch(e => message.error(e?.response?.data?.detail || '创建失败'))
+    .finally(() => { modalLoading.value = false })
   }
-  pendingAction.value = () => {
-    createLoading.value = true
-    const p = createParent.value
-    let promise
-    if (createType.value === 'school') promise = createSchool(createName.value)
-    else if (createType.value === 'grade') promise = createGrade(p, createName.value)
-    else promise = createClass(p.split('/')[0], p.split('/')[1], createName.value)
-    promise
-      .then(() => { message.success('创建成功'); showCreateModal.value = false; refreshTree() })
-      .catch((e) => { message.error(e?.response?.data?.detail || '创建失败') })
-      .finally(() => { createLoading.value = false })
+  // 已有验证过的密码则直接执行，否则弹出密码验证
+  if (savedPwd.value) {
+    go(savedPwd.value)
+  } else {
+    pendingFn = go
+    pwdShow.value = true
   }
-  pwdModalShow.value = true
 }
 
-function onPwdConfirm(password) {
-  pwdModalLoading.value = true
-  verifyPassword(password)
-    .then(() => pendingAction.value?.())
-    .catch(() => { message.error('你寻思寻思这密码它对吗？') })
-    .finally(() => { pwdModalLoading.value = false; pwdModalShow.value = false })
+function onPwdConfirm(pwd) {
+  pwdLoading.value = true
+  savedPwd.value = pwd
+  verifyPassword(pwd).then(() => pendingFn?.(pwd)).catch(() => message.error('你寻思寻思这密码它对吗？')).finally(() => { pwdLoading.value = false; pwdShow.value = false })
 }
 
-function handleDelete(type, school, grade, cls) {
-  pendingAction.value = () => {
-    let promise
-    if (type === 'school') promise = deleteSchool(school)
-    else if (type === 'grade') promise = deleteGrade(school, grade)
-    else promise = deleteClass(school, grade, cls)
-    promise
-      .then(() => { message.success('删除成功'); refreshTree() })
-      .catch((e) => { message.error(e?.response?.data?.detail || '删除失败') })
+function doDelete(type, ...args) {
+  pendingFn = (pwd) => {
+    const cfg = {headers: {'X-Verify-Password': pwd}}
+    const fn = type === 'school' ? deleteSchool(args[0], cfg) : type === 'grade' ? deleteGrade(args[0], args[1], cfg) : deleteClass(args[0], args[1], args[2], cfg)
+    fn.then(() => { message.success('删除成功'); refreshTree() }).catch(e => message.error(e?.response?.data?.detail || '删除失败'))
   }
-  pwdModalShow.value = true
+  pwdShow.value = true
 }
-
-const schoolColumns = [
-  {title: '学校', key: 'school'},
-  {
-    title: '操作', key: 'actions', width: 260,
-    render(row) {
-      return h(NSpace, {}, {
-        default: () => [
-          h(NButton, {size: 'small', onClick: () => openCreateGrade(row.label)}, {default: () => '新增年级'}),
-          h(NButton, {size: 'small', type: 'error', onClick: () => handleDelete('school', row.label)}, {default: () => '删除学校'})
-        ]
-      })
-    }
-  }
-]
-
-const gradeColumns = [
-  {title: '年级', key: 'grade'},
-  {
-    title: '操作', key: 'actions', width: 260,
-    render(row) {
-      return h(NSpace, {}, {
-        default: () => [
-          h(NButton, {size: 'small', onClick: () => openCreateClass(row._school, row.label)}, {default: () => '新增班级'}),
-          h(NButton, {size: 'small', type: 'error', onClick: () => handleDelete('grade', row._school, row.label)}, {default: () => '删除年级'})
-        ]
-      })
-    }
-  }
-]
-
-const classColumns = [
-  {title: '班级', key: 'cls'},
-  {
-    title: '操作', key: 'actions', width: 160,
-    render(row) {
-      return h(NButton, {size: 'small', type: 'error', onClick: () => handleDelete('class', row._school, row._grade, row.label)}, {default: () => '删除班级'})
-    }
-  }
-]
-
-const schoolData = computed(() => scopeTree.value.map(s => ({...s, school: s.label})))
-const selectedSchool = ref('')
-const gradeData = computed(() => {
-  if (!selectedSchool.value) return []
-  const school = scopeTree.value.find(s => s.label === selectedSchool.value)
-  return (school?.children || []).map(g => ({...g, _school: selectedSchool.value, grade: g.label}))
-})
-const selectedGrade = ref('')
-const classData = computed(() => {
-  if (!selectedSchool.value || !selectedGrade.value) return []
-  const school = scopeTree.value.find(s => s.label === selectedSchool.value)
-  const grade = school?.children?.find(g => g.label === selectedGrade.value)
-  return (grade?.children || []).map(c => ({...c, _school: selectedSchool.value, _grade: selectedGrade.value, cls: c.label}))
-})
 </script>
 
 <template>
-  <n-card title="结构管理">
-    <n-tabs type="line" v-model:value="selectedSchool">
-      <n-tab v-for="s in schoolData" :key="s.label" :name="s.label">
-        {{ s.label }}
-        <template #tab>
-          <n-space align="center" :size="4">
-            {{ s.label }}
-            <n-button size="tiny" quaternary @click.stop="openCreateGrade(s.label)">+</n-button>
-          </n-space>
-        </template>
-      </n-tab>
-      <template #suffix>
-        <n-button size="small" @click="openCreateSchool">新增学校</n-button>
-      </template>
-    </n-tabs>
+  <n-card title="结构管理" :bordered="false">
+    <template #header-extra>
+      <n-button type="primary" size="small" @click="openCreate('school')">新增学校</n-button>
+    </template>
 
-    <div v-if="selectedSchool" style="margin-top: 16px;">
-      <n-tabs type="segment" v-model:value="selectedGrade" size="small">
-        <n-tab v-for="g in gradeData" :key="g.label" :name="g.label">
-          <n-space align="center" :size="4">
-            {{ g.label }}
-            <n-button size="tiny" quaternary @click.stop="openCreateClass(selectedSchool, g.label)">+</n-button>
-            <n-button size="tiny" quaternary type="error" @click.stop="handleDelete('grade', selectedSchool, g.label)">×</n-button>
+    <div v-if="tree.length" style="display: flex; flex-direction: column; gap: 16px;">
+      <div v-for="school in tree" :key="school.text"
+        style="border: 1px solid var(--n-border-color); border-radius: 8px; overflow: hidden;">
+        <!-- 学校 -->
+        <div style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--n-card-color);">
+          <n-space align="center" :size="8">
+            <n-text strong style="font-size: 15px;">{{ school.text }}</n-text>
+            <n-text depth="3" style="font-size: 12px;">{{ (school.children || []).length }} 个年级</n-text>
           </n-space>
-        </n-tab>
-      </n-tabs>
-
-      <div v-if="selectedGrade" style="margin-top: 12px;">
-        <n-data-table :columns="classColumns" :data="classData" :bordered="false" size="small"/>
+          <n-space :size="4">
+            <n-button size="tiny" type="success" @click="openCreate('grade', school.text)">新增年级</n-button>
+            <n-button size="tiny" type="error" quaternary @click="doDelete('school', school.text)">删除学校</n-button>
+          </n-space>
+        </div>
+        <!-- 年级 -->
+        <div v-if="school.children?.length" style="border-top: 1px solid var(--n-border-color);">
+          <div v-for="grade in school.children" :key="grade.text"
+            style="border-bottom: 1px solid var(--n-border-color);"
+            :style="school.children.indexOf(grade) === school.children.length - 1 ? 'border-bottom: none;' : ''">
+            <!-- 年级行 -->
+            <div style="padding: 10px 16px 10px 32px; display: flex; justify-content: space-between; align-items: center; background: var(--n-card-color);">
+              <n-space align="center" :size="6">
+                <n-text strong style="font-size: 14px;">{{ grade.text }}</n-text>
+                <n-text depth="3" style="font-size: 12px;">{{ (grade.children || []).length }} 个班级</n-text>
+              </n-space>
+              <n-space :size="4">
+                <n-button size="tiny" type="success" @click="openCreate('class', school.text + '/' + grade.text)">新增班级</n-button>
+                <n-button size="tiny" type="error" quaternary @click="doDelete('grade', school.text, grade.text)">删除年级</n-button>
+              </n-space>
+            </div>
+            <!-- 班级 -->
+            <div v-if="grade.children?.length" style="border-top: 1px solid var(--n-border-color); background: var(--n-card-color);">
+              <div v-for="(cls, idx) in grade.children" :key="cls.text"
+                style="padding: 8px 16px 8px 56px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;"
+                :style="idx < grade.children.length - 1 ? 'border-bottom: 1px solid var(--n-border-color);' : ''">
+                <n-text>{{ cls.text }}</n-text>
+                <n-button size="tiny" type="error" quaternary @click="doDelete('class', school.text, grade.text, cls.text)">删除</n-button>
+              </div>
+            </div>
+            <div v-else style="padding: 8px 16px 8px 56px; font-size: 13px;">
+              <n-text depth="3">暂无班级</n-text>
+            </div>
+          </div>
+        </div>
+        <div v-else style="padding: 12px 16px 12px 32px; font-size: 13px;">
+          <n-text depth="3">暂无年级</n-text>
+        </div>
       </div>
     </div>
+
+    <n-empty v-else description="暂无学校数据" style="padding: 40px 0;">
+      <template #extra>
+        <n-button size="small" @click="openCreate('school')">创建第一个学校</n-button>
+      </template>
+    </n-empty>
   </n-card>
 
-  <n-modal v-model:show="showCreateModal" preset="dialog"
-    :title="createType === 'school' ? '新增学校' : createType === 'grade' ? '新增年级' : '新增班级'">
+  <n-modal v-model:show="showModal" preset="dialog" @update:show="v => { if (!v) savedPwd = '' }"
+    :title="modalType === 'school' ? '新增学校' : modalType === 'grade' ? '新增年级' : '新增班级'">
     <n-form label-placement="left">
-      <n-form-item :label="createType === 'school' ? '学校名称' : createType === 'grade' ? '年级名称' : '班级名称'">
-        <n-input v-model:value="createName" :placeholder="createType === 'school' ? '例如：实验中学' : createType === 'grade' ? '例如：高一' : '例如：1班'" @keyup.enter="doCreate"/>
+      <n-form-item :label="modalType === 'school' ? '学校名称' : modalType === 'grade' ? '年级名称' : '班级名称'">
+        <n-input v-model:value="modalName" :placeholder="modalType === 'school' ? '例如：实验中学' : modalType === 'grade' ? '例如：高一' : '例如：1班'" @keyup.enter="doCreate"/>
       </n-form-item>
     </n-form>
     <template #action>
-      <n-button :loading="createLoading" type="primary" @click="doCreate">创建</n-button>
+      <n-button :loading="modalLoading" type="primary" @click="doCreate">创建</n-button>
     </template>
   </n-modal>
 
-  <n-modal v-model:show="pwdModalShow" preset="dialog" title="验证身份">
+  <n-modal v-model:show="pwdShow" preset="dialog" title="验证身份">
     <n-space vertical>
       <div style="color: var(--n-text-color-3);">此操作需要密码确认</div>
       <n-input v-model:value="pwdInput" type="password" show-password-on="click" placeholder="输入密码" @keyup.enter="onPwdConfirm(pwdInput)"/>
     </n-space>
     <template #action>
-      <n-button :loading="pwdModalLoading" type="primary" @click="onPwdConfirm(pwdInput)">确认</n-button>
+      <n-button :loading="pwdLoading" type="primary" @click="onPwdConfirm(pwdInput)">确认</n-button>
     </template>
   </n-modal>
 </template>
-
-<script>
-import {ref} from 'vue'
-import {h} from 'vue'
-export default {
-  setup() {
-    const pwdInput = ref('')
-    return {pwdInput}
-  }
-}
-</script>
