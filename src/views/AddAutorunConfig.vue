@@ -34,6 +34,7 @@ import {
 } from '@/api/autorun.js'
 import {applyDisabledToScopeOptions, findNodeByValue, normalizeScopes, parseGradePairsFromScopes} from '@/utils/scope.js'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 
 // ============================================================
 // 共用：作用域树
@@ -494,9 +495,7 @@ async function confirmSave(pwd) {
     }
     const payload = { type: form.type, scope: form.scope, priority: form.priority, content }
     if (isEdit.value && form.id) {
-      await axios.delete(`${APISRV}/web/autorun/${form.id}`, {
-        auth: {username: 'ElectronClassSchedule', password: pwd}
-      })
+      await confirmAction(pwd, (cfg) => axios.delete(`${APISRV}/web/autorun/${form.id}`, cfg))
     }
     await saveAutorun(payload, pwd)
     message.success('已保存')

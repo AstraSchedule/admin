@@ -29,6 +29,7 @@ import {APISRV} from '@/global.js'
 import {useRequest} from 'vue-request'
 import {useRoute} from 'vue-router'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 
 const route = useRoute()
 const school = computed(() => route.params.school)
@@ -194,10 +195,8 @@ async function okay(password) {
   saving.value = true
   try {
     const payload = buildPayload()
-    await axios.put(
-      `${APISRV}/web/config/${school.value}/${grade.value}/timetable`,
-      payload,
-      { auth: { username: 'ElectronClassSchedule', password } }
+    await confirmAction(password, (cfg) =>
+      axios.put(`${APISRV}/web/config/${school.value}/${grade.value}/timetable`, payload, cfg)
     )
     messages.success('服务端说行')
     showModal.value = false
