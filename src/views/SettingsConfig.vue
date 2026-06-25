@@ -1,6 +1,6 @@
 <script setup>
 import {
-  NForm, NFormItem, NInput, NButton, NFlex, NCode, NCard, NStatistic, NModal, NPopconfirm, NSpace,
+  NForm, NFormItem, NInput, NButton, NFlex, NCode, NCard, NStatistic, NPopconfirm, NSpace,
   NSwitch, NDatePicker, useMessage, NText, NColorPicker, NInputNumber, NSelect
 } from 'naive-ui'
 import { reactive, ref, computed } from 'vue'

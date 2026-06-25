@@ -266,6 +266,7 @@ async function onPwdConfirm(password) {
           type="file"
           accept=".json,application/json"
           style="display: none"
+          aria-label="选择备份文件"
           @change="onImportFileChange"
         />
         <NText depth="3">导入模式：</NText>

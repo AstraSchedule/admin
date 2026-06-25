@@ -1,5 +1,5 @@
 <script setup>
-import {NButton, NCard, NCode, NFlex, NForm, NFormItem, NInput, NPopconfirm, NSpace, NStatistic, useMessage} from "naive-ui";
+import {NButton, NCard, NCode, NFlex, NForm, NFormItem, NInput, NPopconfirm, NStatistic, useMessage} from "naive-ui";
 import {computed, reactive, ref} from "vue";
 import {zip} from "@/utils.js";
 import axios from "axios";

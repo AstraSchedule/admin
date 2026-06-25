@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRequest } from 'vue-request'
-import { useMessage, NButton, NCard, NForm, NFormItem, NInputNumber, NSelect, NSpace } from 'naive-ui'
+import { useMessage, NButton, NCard, NForm, NFormItem, NInputNumber, NSelect } from 'naive-ui'
 import { AutorunType, fetchCompYearPairs, fetchScopeTree, flattenScope, saveAutorun } from '@/api/autorun.js'
-import { applyDisabledToScopeOptions, normalizeScopes } from '@/utils/scope.js'
+import { normalizeScopes } from '@/utils/scope.js'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
 
 const message = useMessage()
@@ -92,11 +92,11 @@ async function doImport(password) {
   }
 }
 
-const disabledOptions = [...scope.value]
+const disabledOptions = new Set(scope.value)
 const computedScopeOptions = scopeSelectOptions.value.map(o => ({
   label: o.label,
   value: o.value,
-  disabled: disabledOptions.includes(o.value)
+  disabled: disabledOptions.has(o.value)
 }))
 </script>
 

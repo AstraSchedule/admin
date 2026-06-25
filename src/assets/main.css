@@ -34,7 +34,7 @@ html {
 
 ::selection {
     background: var(--n-primary-color, #18a058);
-    color: white;
+    color: #000000;
 }
 
 ::-webkit-scrollbar {
