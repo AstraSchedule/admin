@@ -28,7 +28,19 @@
                 :options="menuOptions"
               />
               <div style="padding: 8px; margin-top: auto;">
-                <n-button block quaternary @click="handleLogout">退出登录</n-button>
+                <div v-if="userInfo.username"
+                  style="margin: 0 8px 8px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                  <n-space align="center" :size="8">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--n-primary-color); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">
+                      {{ userInfo.username.charAt(0).toUpperCase() }}
+                    </div>
+                    <div style="min-width: 0;">
+                      <div style="font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">{{ userInfo.username }}</div>
+                      <n-tag :type="userInfo.role === 'admin' ? 'warning' : 'info'" size="tiny" :bordered="false" round>{{ roleLabelMap[userInfo.role] || userInfo.role }}</n-tag>
+                    </div>
+                  </n-space>
+                </div>
+                <n-button block quaternary size="small" @click="handleLogout">退出登录</n-button>
               </div>
             </n-layout-sider>
             <n-layout style="padding: 16px">
@@ -109,7 +121,7 @@ import {RouterLink, useRouter} from "vue-router";
 import {useRequest} from "vue-request";
 import axios from "axios";
 import {APISRV} from "@/global.js";
-import {getToken, removeToken, isLoggedIn} from "@/auth.js";
+import {getToken, removeToken, isLoggedIn, getUserInfo, setUserInfo, removeUserInfo} from "@/auth.js";
 import hljs from 'highlight.js/lib/core'
 
 const router = useRouter()
@@ -136,6 +148,16 @@ axios.interceptors.response.use(
 const osThemeRef = useOsTheme();
 let theme = computed(() => osThemeRef.value === "dark" ? darkTheme : null);
 const message = console;
+
+const roleLabelMap = {admin: '管理员', readonly: '只读', school_w: '校写入', grade_w: '级写入', class_w: '班写入'}
+const userInfo = ref(getUserInfo())
+
+// 如果有 token 但没有 userInfo，从 API 获取
+if (isLoggedIn() && !userInfo.value.username) {
+  axios.get(`${APISRV}/web/auth/me`)
+    .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
+    .catch(() => {})
+}
 
 function pad(n) {
   return n.toString().padStart(2, '0');
@@ -432,6 +454,7 @@ let activeKey =  ref(null), collapsed = ref(false)
 
 function handleLogout() {
   removeToken()
+  removeUserInfo()
   router.replace('/login')
 }
 </script>
