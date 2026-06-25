@@ -4,7 +4,7 @@ import {useRouter} from 'vue-router'
 import {NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {login} from '@/api/auth.js'
-import {setToken} from '@/auth.js'
+import {setToken, setUserInfo} from '@/auth.js'
 
 const router = useRouter()
 const message = useMessage()
@@ -15,6 +15,7 @@ const {loading, run} = useRequest(() => login(form.value.username, form.value.pa
   manual: true,
   onSuccess: (data) => {
     setToken(data.token)
+    setUserInfo(data.user || {})
     if (data.must_change_pwd) {
       message.warning('首次登录请修改密码')
       router.replace('/change-password')
