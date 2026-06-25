@@ -27,6 +27,11 @@ const router = createRouter(
                 component: () => import("../views/Users.vue")
             },
             {
+                path: '/structure',
+                name: 'Structure',
+                component: () => import("../views/Structure.vue")
+            },
+            {
                 path: '/autorun',
                 name: 'Autorun',
                 component: () => import("../views/Autorun.vue")

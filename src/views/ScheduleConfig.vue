@@ -12,6 +12,7 @@ import {
   useMessage
 } from "naive-ui";
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue';
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 import {computed, h, reactive, ref} from "vue";
 import axios from "axios";
 import {APISRV} from "@/global.js";
@@ -62,10 +63,8 @@ async function onPwdConfirm(password) {
         classList: (day.classList || []).map(slot => Array.isArray(slot) ? slot : [slot])
       }))
     }
-    await axios.put(
-      `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`,
-      payload,
-      { auth: { username: 'ElectronClassSchedule', password } }
+    await confirmAction(password, (cfg) =>
+      axios.put(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`, payload, cfg)
     )
     const messages = useMessage();
     messages.success("服务端说行")

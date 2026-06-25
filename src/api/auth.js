@@ -6,8 +6,8 @@ export async function login(username, password) {
   return resp.data
 }
 
-export async function changePassword(old_password, new_password) {
-  const resp = await axios.post(`${APISRV}/web/auth/change-password`, {old_password, new_password})
+export async function changePassword(old_password, new_password, new_username) {
+  const resp = await axios.post(`${APISRV}/web/auth/change-password`, {old_password, new_password, new_username})
   return resp.data
 }
 
@@ -34,4 +34,14 @@ export async function updateUser(id, payload) {
 export async function deleteUser(id) {
   const resp = await axios.delete(`${APISRV}/web/users/${id}`)
   return resp.data
+}
+
+export async function verifyPassword(password) {
+  const resp = await axios.post(`${APISRV}/web/auth/verify-password`, {password})
+  return resp.data
+}
+
+export async function confirmAction(password, action) {
+  await verifyPassword(password)
+  return action({ headers: { 'X-Verify-Password': password } })
 }
