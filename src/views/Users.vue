@@ -120,7 +120,7 @@ function onDeleteConfirm(pwd) {
 }
 
 function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: '', must_change_pwd: true, must_change_username: false}; showModal.value = true }
-function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || ''}; showModal.value = true }
+function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || '', must_change_pwd: row.must_change_pwd || false, must_change_username: row.must_change_username || false}; showModal.value = true }
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
 
 </script>
