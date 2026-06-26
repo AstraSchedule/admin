@@ -94,8 +94,8 @@ const columns = [
 
 // ====== CRUD ======
 const {loading: saveLoading, run: runSave} = useRequest(() => {
-  if (isEdit.value) { const p = {username: form.value.username, role: form.value.role, scope: form.value.scope}; if (form.value.password) p.password = form.value.password; return updateUser(editId.value, p) }
-  return createUser(form.value)
+  if (isEdit.value) { const p = {username: form.value.username, role: form.value.role, scope: form.value.scope, must_change_pwd: form.value.must_change_pwd, must_change_username: form.value.must_change_username}; if (form.value.password) p.password = form.value.password; return updateUser(editId.value, p) }
+  return createUser({username: form.value.username, password: form.value.password, role: form.value.role, scope: form.value.scope, must_change_pwd: form.value.must_change_pwd, must_change_username: form.value.must_change_username})
 }, { manual: true, onSuccess: () => { message.success(isEdit.value ? '用户更新成功' : '用户创建成功'); showModal.value = false; fetchUsers() }, onError: (e) => { message.error(e?.response?.data?.detail || '操作失败') } })
 
 const {run: runDelete} = useRequest((row) => deleteUser(row.id), { manual: true, onSuccess: () => { message.success('用户已删除'); fetchUsers() }, onError: (e) => { message.error(e?.response?.data?.detail || '删除失败') } })
@@ -119,7 +119,7 @@ function onDeleteConfirm(pwd) {
     .finally(() => { deleteLoading.value = false; deleteModalShow.value = false })
 }
 
-function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; showModal.value = true }
+function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: '', must_change_pwd: true, must_change_username: false}; showModal.value = true }
 function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || ''}; showModal.value = true }
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
 
@@ -145,6 +145,15 @@ function handleSave() { if (!isEdit.value && (!form.value.username || !form.valu
           :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'"
           clearable
         />
+      </n-form-item>
+      <n-form-item label="强制改密">
+        <n-switch v-model:value="form.must_change_pwd"/>
+      </n-form-item>
+      <n-form-item label="强制改名" v-if="!form.must_change_pwd">
+        <n-switch v-model:value="form.must_change_username"/>
+      </n-form-item>
+      <n-form-item label="允许改名" v-if="form.must_change_pwd && !form.must_change_username">
+        <n-switch v-model:value="form.allow_change_username"/>
       </n-form-item>
     </n-form>
     <template #action><n-button :loading="saveLoading" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button></template>
