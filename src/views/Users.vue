@@ -55,16 +55,18 @@ function buildTreeData(tree) {
 
 function filterTreeByRole(tree, role) {
   if (!tree.length || !role || role === 'admin' || role === 'readonly') return []
-  function filter(node) {
-    const copy = {...node}
+  function filter(node, depth) {
+    const copy = {...node, children: undefined}
     if (node.children?.length) {
-      copy.children = node.children.map(filter).filter(Boolean)
+      // 校写入：学校节点去掉子节点，使其成为叶子
+      if (role === 'school_w') return copy
+      // 级写入：年级节点去掉子节点，使其成为叶子
+      if (role === 'grade_w' && depth >= 1) return copy
+      copy.children = node.children.map((c, i) => filter(c, depth + 1)).filter(Boolean)
     }
-    if (role === 'school_w' && node.children?.length) return null
-    if (role === 'grade_w' && node.children?.length && node.children[0]?.children?.length) return null
     return copy
   }
-  return tree.map(filter).filter(Boolean)
+  return tree.map(n => filter(n, 0)).filter(Boolean)
 }
 
 watch(rawScopeTree, (tree) => {
