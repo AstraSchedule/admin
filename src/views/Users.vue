@@ -1,7 +1,7 @@
 <script setup>
 import {h, ref, watch} from 'vue'
 import {
-  NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, NTreeSelect, useMessage
+  NButton, NCard, NCascader, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, useMessage
 } from 'naive-ui'
 import {useRequest} from 'vue-request'
 import axios from 'axios'
@@ -23,7 +23,6 @@ const roleTypeMap = {admin: 'error', readonly: 'default', school_w: 'warning', g
 // ====== 所有 ref 在此处定义 ======
 const users = ref([])
 const rawScopeTree = ref([])
-const checkedKeys = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
@@ -45,8 +44,10 @@ const filteredTreeData = ref([])
 function buildTreeData(tree) {
   function mapNode(n, parentKey) {
     const key = parentKey ? parentKey + '/' + n.text : n.text
-    const node = {key, label: n.text}
-    if (n.children?.length) node.children = n.children.map(c => mapNode(c, key))
+    const node = {value: key, label: n.text}
+    if (n.children?.length) {
+      node.children = n.children.map(c => mapNode(c, key))
+    }
     return node
   }
   return (tree || []).map(s => mapNode(s, ''))
@@ -73,20 +74,10 @@ watch(rawScopeTree, (tree) => {
 
 watch(() => form.value.role, (role) => {
   form.value.scope = ''
-  checkedKeys.value = []
   filteredTreeData.value = filterTreeByRole(treeData.value, role)
 })
 
-// checkedKeys <-> scope 单值
-watch(checkedKeys, (keys) => {
-  form.value.scope = keys.length > 0 ? keys[keys.length - 1] : ''
-})
-
-function syncScopeToChecked() {
-  checkedKeys.value = form.value.scope ? [form.value.scope] : []
-}
-
-watch(showModal, (v) => { if (v) syncScopeToChecked() })
+// scope 值直接作为 NCascader 的 value，无需转换
 
 // ====== 表格列 ======
 const columns = [
@@ -106,20 +97,11 @@ const {loading: saveLoading, run: runSave} = useRequest(() => {
 
 const {run: runDelete} = useRequest((row) => deleteUser(row.id), { manual: true, onSuccess: () => { message.success('用户已删除'); fetchUsers() }, onError: (e) => { message.error(e?.response?.data?.detail || '删除失败') } })
 
-function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; checkedKeys.value = []; showModal.value = true }
+function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; showModal.value = true }
 function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || ''}; showModal.value = true }
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
 function doDelete(row) { runDelete(row) }
 
-// 节点点击：切换选中
-function nodeProps({option}) {
-  return {
-    onClick: () => {
-      const idx = checkedKeys.value.indexOf(option.key)
-      checkedKeys.value = idx >= 0 ? checkedKeys.value.filter(k => k !== option.key) : [option.key]
-    }
-  }
-}
 </script>
 
 <template>
@@ -133,15 +115,12 @@ function nodeProps({option}) {
       <n-form-item label="密码"><n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="isEdit ? '留空不修改' : '至少 6 位'"/></n-form-item>
       <n-form-item label="角色"><n-select v-model:value="form.role" :options="roleOptions"/></n-form-item>
       <n-form-item label="作用域" v-if="form.role !== 'admin' && form.role !== 'readonly'">
-        <n-tree-select
-          v-model:value="checkedKeys"
-          :data="filteredTreeData"
-          checkable
-          cascade
-          multiple
-          show-line
-          default-expand-all
-          :override-default-node-click-behavior="nodeProps"
+        <n-cascader
+          v-model:value="form.scope"
+          :options="filteredTreeData"
+          expand-trigger="click"
+          check-strategy="child"
+          show-path
           :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'"
           clearable
         />
