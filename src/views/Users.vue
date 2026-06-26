@@ -7,6 +7,7 @@ import {useRequest} from 'vue-request'
 import axios from 'axios'
 import {APISRV} from '@/global.js'
 import {listUsers, createUser, updateUser, deleteUser} from '@/api/auth.js'
+import {verifyPassword} from '@/api/auth.js'
 
 const message = useMessage()
 
@@ -99,10 +100,28 @@ const {loading: saveLoading, run: runSave} = useRequest(() => {
 
 const {run: runDelete} = useRequest((row) => deleteUser(row.id), { manual: true, onSuccess: () => { message.success('用户已删除'); fetchUsers() }, onError: (e) => { message.error(e?.response?.data?.detail || '删除失败') } })
 
+const deleteModalShow = ref(false)
+const deletePwd = ref('')
+const deleteLoading = ref(false)
+const deleteRow = ref(null)
+
+function doDelete(row) {
+  deleteRow.value = row
+  deletePwd.value = ''
+  deleteModalShow.value = true
+}
+
+function onDeleteConfirm(pwd) {
+  deleteLoading.value = true
+  verifyPassword(pwd)
+    .then(() => runDelete(deleteRow.value))
+    .catch(() => message.error('你寻思寻思这密码它对吗？'))
+    .finally(() => { deleteLoading.value = false; deleteModalShow.value = false })
+}
+
 function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; showModal.value = true }
 function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || ''}; showModal.value = true }
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
-function doDelete(row) { runDelete(row) }
 
 </script>
 
@@ -129,5 +148,14 @@ function doDelete(row) { runDelete(row) }
       </n-form-item>
     </n-form>
     <template #action><n-button :loading="saveLoading" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button></template>
+  </n-modal>
+  <n-modal v-model:show="deleteModalShow" preset="dialog" title="验证身份">
+    <n-space vertical>
+      <div style="color: var(--n-text-color-3);">此操作需要密码确认</div>
+      <n-input v-model:value="deletePwd" type="password" show-password-on="click" placeholder="输入密码" @keyup.enter="onDeleteConfirm(deletePwd)"/>
+    </n-space>
+    <template #action>
+      <n-button :loading="deleteLoading" type="error" @click="onDeleteConfirm(deletePwd)">确认删除</n-button>
+    </template>
   </n-modal>
 </template>
