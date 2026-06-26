@@ -29,7 +29,7 @@
               />
               <div style="padding: 8px; margin-top: auto;">
                 <div v-if="userInfo.username"
-                  style="margin: 0 8px 8px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                  style="margin: 0 8px 8px; padding: 10px 12px; border-radius: 8px; background: var(--n-card-color); border: 1px solid var(--n-border-color);">
                   <n-space align="center" :size="8">
                     <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--n-primary-color); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">
                       {{ userInfo.username.charAt(0).toUpperCase() }}
@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-import {computed, h, reactive, ref} from "vue";
+import {computed, h, reactive, ref, provide} from "vue";
 import {
   darkTheme,
   NAlert,
@@ -158,6 +158,16 @@ if (isLoggedIn() && !userInfo.value.username) {
     .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
     .catch(() => {})
 }
+
+// 路由变化时刷新 userInfo（登录后跳转时触发）
+const route = useRouter()
+watch(() => route.currentRoute.value.path, () => {
+  if (isLoggedIn()) {
+    axios.get(`${APISRV}/web/auth/me`)
+      .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
+      .catch(() => {})
+  }
+})
 
 function pad(n) {
   return n.toString().padStart(2, '0');
@@ -449,6 +459,12 @@ useRequest(
       }
     }
 );
+
+// 暴露刷新菜单方法给子组件
+const refreshMenu = () => {
+  getMenu().then(updateMenuFromResponse).catch(e => console.error('[menu] 刷新失败', e));
+};
+provide('refreshMenu', refreshMenu);
 
 let activeKey =  ref(null), collapsed = ref(false)
 
