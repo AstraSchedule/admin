@@ -93,6 +93,7 @@ async function doDelete(password) {
     const status = e?.status || e?.response?.status
     if (status === 401) message.error('你寻思寻思这密码它对吗？')
     else if (status === 400) message.error('码姿不对，删了重写！（服务端校验不通过）')
+    else if(status === 403) message.error('无权访问：有些门总是关着的')
     else message.error(`服务端看完天塌了（状态码：${status??'未知'}）`)
   } finally {
     deleting.value = false
