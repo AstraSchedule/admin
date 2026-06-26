@@ -470,6 +470,7 @@ let activeKey =  ref(null), collapsed = ref(false)
 function handleLogout() {
   removeToken()
   removeUserInfo()
+  userInfo.value = {}
   router.replace('/login')
 }
 </script>
