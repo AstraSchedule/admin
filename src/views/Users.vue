@@ -1,11 +1,12 @@
 <script setup>
-import {h, ref, computed, watch} from 'vue'
+import {h, ref, computed, watch, onMounted} from 'vue'
 import {
-  NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, NTreeSelect, useMessage
+  NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, useMessage
 } from 'naive-ui'
 import {useRequest} from 'vue-request'
+import axios from 'axios'
+import {APISRV} from '@/global.js'
 import {listUsers, createUser, updateUser, deleteUser} from '@/api/auth.js'
-import {fetchScopeTree} from '@/api/autorun.js'
 
 const message = useMessage()
 
@@ -22,39 +23,8 @@ const roleTypeMap = {admin: 'error', readonly: 'default', school_w: 'warning', g
 
 const users = ref([])
 const rawScopeTree = ref([])
-
-useRequest(fetchScopeTree, {
-  manual: false,
-  onSuccess: (res) => { rawScopeTree.value = res?.data || [] },
-  onError: () => { rawScopeTree.value = [] }
-})
-
-// 按角色过滤树：校写入只显示学校，级写入显示学校+级，班写入显示全部
-const filteredScopeTree = computed(() => {
-  const role = form.value.role
-  if (role === 'admin' || role === 'readonly') return rawScopeTree.value.map(s => ({...s, children: undefined, isLeaf: true}))
-  if (role === 'school_w') {
-    // 校写入：只保留学校节点
-    return rawScopeTree.value.map(s => ({...s, children: undefined, isLeaf: true}))
-  }
-  if (role === 'grade_w') {
-    // 级写入：保留学校+级，去掉班
-    return rawScopeTree.value.map(s => ({
-      ...s,
-      children: (s.children || []).map(g => ({...g, children: undefined, isLeaf: true}))
-    }))
-  }
-  // 班写入：完整树
-  return rawScopeTree.value
-})
-
-// 控制节点是否可选
-function selectable(node) {
-  const role = form.value.role
-  if (role === 'school_w') return !node.children || node.children.length === 0 || node.value.split('/').length === 1
-  if (role === 'grade_w') return !node.children || node.children.length === 0 || node.value.split('/').length <= 2
-  return true
-}
+// 立即加载结构树
+axios.get(`${APISRV}/web/structure`).then(r => { rawScopeTree.value = r.data || [] }).catch(() => {})
 
 const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
   manual: false,
@@ -95,11 +65,6 @@ const showModal = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
 const form = ref({username: '', password: '', role: 'class_w', scope: ''})
-
-// 切换角色时清空作用域
-watch(() => form.value.role, () => {
-  form.value.scope = ''
-})
 
 const {loading: saveLoading, run: runSave} = useRequest(
   () => {
@@ -177,11 +142,9 @@ function doDelete(row) {
         <n-select v-model:value="form.role" :options="roleOptions"/>
       </n-form-item>
       <n-form-item label="作用域" v-if="form.role !== 'admin' && form.role !== 'readonly'">
-        <n-tree-select
+        <n-select
           v-model:value="form.scope"
-          :options="filteredScopeTree"
-          :selectable="selectable"
-          default-expand-all
+          :options="scopeOptions"
           :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'"
           clearable
         />
