@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-import {computed, h, reactive, ref, provide} from "vue";
+import {computed, h, reactive, ref, provide, watch} from "vue";
 import {
   darkTheme,
   NAlert,
@@ -160,8 +160,7 @@ if (isLoggedIn() && !userInfo.value.username) {
 }
 
 // 路由变化时刷新 userInfo（登录后跳转时触发）
-const route = useRouter()
-watch(() => route.currentRoute.value.path, () => {
+watch(() => router.currentRoute.value.path, () => {
   if (isLoggedIn()) {
     axios.get(`${APISRV}/web/auth/me`)
       .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
