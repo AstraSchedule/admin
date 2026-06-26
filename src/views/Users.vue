@@ -1,13 +1,12 @@
 <script setup>
 import {h, ref, watch} from 'vue'
 import {
-  NButton, NCard, NCascader, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, useMessage
+  NButton, NCard, NCascader, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, NSwitch, useMessage
 } from 'naive-ui'
 import {useRequest} from 'vue-request'
 import axios from 'axios'
 import {APISRV} from '@/global.js'
-import {listUsers, createUser, updateUser, deleteUser} from '@/api/auth.js'
-import {verifyPassword} from '@/api/auth.js'
+import {listUsers, createUser, updateUser, deleteUser, verifyPassword} from '@/api/auth.js'
 
 const message = useMessage()
 
@@ -21,15 +20,14 @@ const roleOptions = [
 const roleLabelMap = {admin: '管理员', readonly: '只读', school_w: '校写入', grade_w: '级写入', class_w: '班写入'}
 const roleTypeMap = {admin: 'error', readonly: 'default', school_w: 'warning', grade_w: 'info', class_w: 'success'}
 
-// ====== 所有 ref 在此处定义 ======
 const users = ref([])
 const rawScopeTree = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
-const form = ref({username: '', password: '', role: 'class_w', scope: ''})
+const form = ref({username: '', password: '', role: 'class_w', scope: '', must_change_pwd: true, must_change_username: false})
+let skipScopeReset = false
 
-// ====== 数据加载 ======
 axios.get(`${APISRV}/web/structure`).then(r => { rawScopeTree.value = r.data || [] }).catch(() => {})
 
 const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
@@ -38,7 +36,7 @@ const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
   onError: (e) => { message.error(e?.response?.data?.detail || '获取用户列表失败') }
 })
 
-// ====== 树数据处理 ======
+// 树数据处理
 const treeData = ref([])
 const filteredTreeData = ref([])
 
@@ -46,9 +44,7 @@ function buildTreeData(tree) {
   function mapNode(n, parentKey) {
     const key = parentKey ? parentKey + '/' + n.text : n.text
     const node = {value: key, label: n.text}
-    if (n.children?.length) {
-      node.children = n.children.map(c => mapNode(c, key))
-    }
+    if (n.children?.length) node.children = n.children.map(c => mapNode(c, key))
     return node
   }
   return (tree || []).map(s => mapNode(s, ''))
@@ -59,9 +55,7 @@ function filterTreeByRole(tree, role) {
   function filter(node, depth) {
     const copy = {...node, children: undefined}
     if (node.children?.length) {
-      // 校写入：学校节点去掉子节点，使其成为叶子
       if (role === 'school_w') return copy
-      // 级写入：年级节点去掉子节点，使其成为叶子
       if (role === 'grade_w' && depth >= 1) return copy
       copy.children = node.children.map((c, i) => filter(c, depth + 1)).filter(Boolean)
     }
@@ -76,13 +70,11 @@ watch(rawScopeTree, (tree) => {
 }, {immediate: true})
 
 watch(() => form.value.role, (role) => {
-  form.value.scope = ''
+  if (!skipScopeReset) form.value.scope = ''
+  skipScopeReset = false
   filteredTreeData.value = filterTreeByRole(treeData.value, role)
 })
 
-// scope 值直接作为 NCascader 的 value，无需转换
-
-// ====== 表格列 ======
 const columns = [
   {title: 'ID', key: 'id', width: 60},
   {title: '用户名', key: 'username'},
@@ -92,7 +84,6 @@ const columns = [
   {title: '操作', key: 'actions', width: 160, render(row) { return h(NSpace, {}, {default: () => [h(NButton, {size: 'small', onClick: () => openEdit(row)}, {default: () => '编辑'}), h(NButton, {size: 'small', type: 'error', onClick: () => doDelete(row)}, {default: () => '删除'})]}) }}
 ]
 
-// ====== CRUD ======
 const {loading: saveLoading, run: runSave} = useRequest(() => {
   if (isEdit.value) { const p = {username: form.value.username, role: form.value.role, scope: form.value.scope, must_change_pwd: form.value.must_change_pwd, must_change_username: form.value.must_change_username}; if (form.value.password) p.password = form.value.password; return updateUser(editId.value, p) }
   return createUser({username: form.value.username, password: form.value.password, role: form.value.role, scope: form.value.scope, must_change_pwd: form.value.must_change_pwd, must_change_username: form.value.must_change_username})
@@ -105,24 +96,20 @@ const deletePwd = ref('')
 const deleteLoading = ref(false)
 const deleteRow = ref(null)
 
-function doDelete(row) {
-  deleteRow.value = row
-  deletePwd.value = ''
-  deleteModalShow.value = true
-}
-
+function doDelete(row) { deleteRow.value = row; deletePwd.value = ''; deleteModalShow.value = true }
 function onDeleteConfirm(pwd) {
   deleteLoading.value = true
-  verifyPassword(pwd)
-    .then(() => runDelete(deleteRow.value))
-    .catch(() => message.error('你寻思寻思这密码它对吗？'))
-    .finally(() => { deleteLoading.value = false; deleteModalShow.value = false })
+  verifyPassword(pwd).then(() => runDelete(deleteRow.value)).catch(() => message.error('你寻思寻思这密码它对吗？')).finally(() => { deleteLoading.value = false; deleteModalShow.value = false })
 }
 
 function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: '', must_change_pwd: true, must_change_username: false}; showModal.value = true }
-function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || '', must_change_pwd: row.must_change_pwd || false, must_change_username: row.must_change_username || false}; showModal.value = true }
+function openEdit(row) {
+  isEdit.value = true; editId.value = row.id
+  skipScopeReset = true
+  form.value = {username: row.username, password: '', role: row.role, scope: row.scope || '', must_change_pwd: row.must_change_pwd || false, must_change_username: row.must_change_username || false}
+  showModal.value = true
+}
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
-
 </script>
 
 <template>
@@ -136,25 +123,10 @@ function handleSave() { if (!isEdit.value && (!form.value.username || !form.valu
       <n-form-item label="密码"><n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="isEdit ? '留空不修改' : '至少 6 位'"/></n-form-item>
       <n-form-item label="角色"><n-select v-model:value="form.role" :options="roleOptions"/></n-form-item>
       <n-form-item label="作用域" v-if="form.role !== 'admin' && form.role !== 'readonly'">
-        <n-cascader
-          v-model:value="form.scope"
-          :options="filteredTreeData"
-          expand-trigger="click"
-          check-strategy="child"
-          show-path
-          :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'"
-          clearable
-        />
+        <n-cascader v-model:value="form.scope" :options="filteredTreeData" expand-trigger="click" check-strategy="child" show-path :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'" clearable/>
       </n-form-item>
-      <n-form-item label="强制改密">
-        <n-switch v-model:value="form.must_change_pwd"/>
-      </n-form-item>
-      <n-form-item label="强制改名" v-if="!form.must_change_pwd">
-        <n-switch v-model:value="form.must_change_username"/>
-      </n-form-item>
-      <n-form-item label="允许改名" v-if="form.must_change_pwd && !form.must_change_username">
-        <n-switch v-model:value="form.allow_change_username"/>
-      </n-form-item>
+      <n-form-item label="强制改密"><n-switch v-model:value="form.must_change_pwd"/></n-form-item>
+      <n-form-item label="允许改名" v-if="form.must_change_pwd"><n-switch v-model:value="form.must_change_username"/></n-form-item>
     </n-form>
     <template #action><n-button :loading="saveLoading" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button></template>
   </n-modal>
@@ -163,8 +135,6 @@ function handleSave() { if (!isEdit.value && (!form.value.username || !form.valu
       <div style="color: var(--n-text-color-3);">此操作需要密码确认</div>
       <n-input v-model:value="deletePwd" type="password" show-password-on="click" placeholder="输入密码" @keyup.enter="onDeleteConfirm(deletePwd)"/>
     </n-space>
-    <template #action>
-      <n-button :loading="deleteLoading" type="error" @click="onDeleteConfirm(deletePwd)">确认删除</n-button>
-    </template>
+    <template #action><n-button :loading="deleteLoading" type="error" @click="onDeleteConfirm(deletePwd)">确认删除</n-button></template>
   </n-modal>
 </template>
