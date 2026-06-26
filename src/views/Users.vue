@@ -1,7 +1,7 @@
 <script setup>
 import {h, ref, watch} from 'vue'
 import {
-  NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, useMessage
+  NButton, NCard, NDataTable, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NTag, NTreeSelect, useMessage
 } from 'naive-ui'
 import {useRequest} from 'vue-request'
 import axios from 'axios'
@@ -20,9 +20,16 @@ const roleOptions = [
 const roleLabelMap = {admin: '管理员', readonly: '只读', school_w: '校写入', grade_w: '级写入', class_w: '班写入'}
 const roleTypeMap = {admin: 'error', readonly: 'default', school_w: 'warning', grade_w: 'info', class_w: 'success'}
 
+// ====== 所有 ref 在此处定义 ======
 const users = ref([])
 const rawScopeTree = ref([])
+const checkedKeys = ref([])
+const showModal = ref(false)
+const isEdit = ref(false)
+const editId = ref(null)
+const form = ref({username: '', password: '', role: 'class_w', scope: ''})
 
+// ====== 数据加载 ======
 axios.get(`${APISRV}/web/structure`).then(r => { rawScopeTree.value = r.data || [] }).catch(() => {})
 
 const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
@@ -31,6 +38,57 @@ const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
   onError: (e) => { message.error(e?.response?.data?.detail || '获取用户列表失败') }
 })
 
+// ====== 树数据处理 ======
+const treeData = ref([])
+const filteredTreeData = ref([])
+
+function buildTreeData(tree) {
+  function mapNode(n, parentKey) {
+    const key = parentKey ? parentKey + '/' + n.text : n.text
+    const node = {key, label: n.text}
+    if (n.children?.length) node.children = n.children.map(c => mapNode(c, key))
+    return node
+  }
+  return (tree || []).map(s => mapNode(s, ''))
+}
+
+function filterTreeByRole(tree, role) {
+  if (!tree.length || !role || role === 'admin' || role === 'readonly') return []
+  function filter(node) {
+    const copy = {...node}
+    if (node.children?.length) {
+      copy.children = node.children.map(filter).filter(Boolean)
+    }
+    if (role === 'school_w' && node.children?.length) return null
+    if (role === 'grade_w' && node.children?.length && node.children[0]?.children?.length) return null
+    return copy
+  }
+  return tree.map(filter).filter(Boolean)
+}
+
+watch(rawScopeTree, (tree) => {
+  treeData.value = buildTreeData(tree)
+  filteredTreeData.value = filterTreeByRole(treeData.value, form.value.role)
+}, {immediate: true})
+
+watch(() => form.value.role, (role) => {
+  form.value.scope = ''
+  checkedKeys.value = []
+  filteredTreeData.value = filterTreeByRole(treeData.value, role)
+})
+
+// checkedKeys <-> scope 单值
+watch(checkedKeys, (keys) => {
+  form.value.scope = keys.length > 0 ? keys[keys.length - 1] : ''
+})
+
+function syncScopeToChecked() {
+  checkedKeys.value = form.value.scope ? [form.value.scope] : []
+}
+
+watch(showModal, (v) => { if (v) syncScopeToChecked() })
+
+// ====== 表格列 ======
 const columns = [
   {title: 'ID', key: 'id', width: 60},
   {title: '用户名', key: 'username'},
@@ -40,11 +98,7 @@ const columns = [
   {title: '操作', key: 'actions', width: 160, render(row) { return h(NSpace, {}, {default: () => [h(NButton, {size: 'small', onClick: () => openEdit(row)}, {default: () => '编辑'}), h(NButton, {size: 'small', type: 'error', onClick: () => doDelete(row)}, {default: () => '删除'})]}) }}
 ]
 
-const showModal = ref(false)
-const isEdit = ref(false)
-const editId = ref(null)
-const form = ref({username: '', password: '', role: 'class_w', scope: ''})
-
+// ====== CRUD ======
 const {loading: saveLoading, run: runSave} = useRequest(() => {
   if (isEdit.value) { const p = {username: form.value.username, role: form.value.role, scope: form.value.scope}; if (form.value.password) p.password = form.value.password; return updateUser(editId.value, p) }
   return createUser(form.value)
@@ -52,10 +106,20 @@ const {loading: saveLoading, run: runSave} = useRequest(() => {
 
 const {run: runDelete} = useRequest((row) => deleteUser(row.id), { manual: true, onSuccess: () => { message.success('用户已删除'); fetchUsers() }, onError: (e) => { message.error(e?.response?.data?.detail || '删除失败') } })
 
-function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; showModal.value = true }
+function openCreate() { isEdit.value = false; editId.value = null; form.value = {username: '', password: '', role: 'class_w', scope: ''}; checkedKeys.value = []; showModal.value = true }
 function openEdit(row) { isEdit.value = true; editId.value = row.id; form.value = {username: row.username, password: '', role: row.role, scope: row.scope || ''}; showModal.value = true }
 function handleSave() { if (!isEdit.value && (!form.value.username || !form.value.password)) { message.warning('用户名和密码不能为空'); return } runSave() }
 function doDelete(row) { runDelete(row) }
+
+// 节点点击：切换选中
+function nodeProps({option}) {
+  return {
+    onClick: () => {
+      const idx = checkedKeys.value.indexOf(option.key)
+      checkedKeys.value = idx >= 0 ? checkedKeys.value.filter(k => k !== option.key) : [option.key]
+    }
+  }
+}
 </script>
 
 <template>
@@ -69,7 +133,18 @@ function doDelete(row) { runDelete(row) }
       <n-form-item label="密码"><n-input v-model:value="form.password" type="password" show-password-on="click" :placeholder="isEdit ? '留空不修改' : '至少 6 位'"/></n-form-item>
       <n-form-item label="角色"><n-select v-model:value="form.role" :options="roleOptions"/></n-form-item>
       <n-form-item label="作用域" v-if="form.role !== 'admin' && form.role !== 'readonly'">
-        <n-input v-model:value="form.scope" :placeholder="form.role === 'school_w' ? '例如：39' : form.role === 'grade_w' ? '例如：39/2024' : '例如：39/2024/5'"/>
+        <n-tree-select
+          v-model:value="checkedKeys"
+          :data="filteredTreeData"
+          checkable
+          cascade
+          multiple
+          show-line
+          default-expand-all
+          :override-default-node-click-behavior="nodeProps"
+          :placeholder="form.role === 'school_w' ? '请选择学校' : form.role === 'grade_w' ? '请选择年级' : '请选择班级'"
+          clearable
+        />
       </n-form-item>
     </n-form>
     <template #action><n-button :loading="saveLoading" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</n-button></template>
