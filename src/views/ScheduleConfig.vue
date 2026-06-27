@@ -10,6 +10,7 @@ import {
   useMessage
 } from "naive-ui";
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue';
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 import {computed, h, reactive, ref} from "vue";
 import axios from "axios";
 import {APISRV} from "@/global.js";
@@ -60,10 +61,8 @@ async function onPwdConfirm(password) {
         classList: (day.classList || []).map(slot => Array.isArray(slot) ? slot : [slot])
       }))
     }
-    await axios.put(
-      `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`,
-      payload,
-      { auth: { username: 'ElectronClassSchedule', password } }
+    await confirmAction(password, (cfg) =>
+      axios.put(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`, payload, cfg)
     )
     const messages = useMessage();
     messages.success("服务端说行")
@@ -72,6 +71,7 @@ async function onPwdConfirm(password) {
     const messages = useMessage();
     if (error.status === 401) messages.error("你寻思寻思这密码它对吗？")
     else if (error.status === 400) messages.error("码姿不对，删了重写！（服务端校验不通过）")
+    else if(error?.status === 403) messages.error('无权访问：有些门总是关着的')
     else messages.error(`服务端看完天塌了（状态码：${error}）`)
   } finally {
     saving.value = false

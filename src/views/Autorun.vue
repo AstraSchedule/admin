@@ -8,6 +8,7 @@ import {APISRV} from '@/global.js'
 import {AutorunType, getAutorunTypeLabel, listTasks, summarizeContent} from '@/api/autorun.js'
 import ScopeTags from '@/components/ScopeTags.vue'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 
 // 排序：生效中 > 待生效 > 已过期；生效中内部按优先级降序，其他保持原顺序
 function sortAutorunRows(list) {
@@ -81,8 +82,8 @@ async function doDelete(password) {
   if(!deleteId.value) return
   deleting.value = true
   try {
-    await axios.delete(`${APISRV}/web/autorun/${deleteId.value}`,
-        {auth: {username: 'ElectronClassSchedule', password}}
+    await confirmAction(password, (cfg) =>
+      axios.delete(`${APISRV}/web/autorun/${deleteId.value}`, cfg)
     )
     message.success('已删除')
     showDelete.value = false
@@ -92,6 +93,7 @@ async function doDelete(password) {
     const status = e?.status || e?.response?.status
     if (status === 401) message.error('你寻思寻思这密码它对吗？')
     else if (status === 400) message.error('码姿不对，删了重写！（服务端校验不通过）')
+    else if(status === 403) message.error('无权访问：有些门总是关着的')
     else message.error(`服务端看完天塌了（状态码：${status??'未知'}）`)
   } finally {
     deleting.value = false

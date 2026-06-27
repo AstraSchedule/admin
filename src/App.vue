@@ -27,6 +27,21 @@
                 :collapsed-icon-size="22"
                 :options="menuOptions"
               />
+              <div style="padding: 8px; margin-top: auto;">
+                <div v-if="userInfo.username"
+                  style="margin: 0 8px 8px; padding: 10px 12px; border-radius: 8px; background: var(--n-card-color); border: 1px solid var(--n-border-color);">
+                  <n-space align="center" :size="8">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--n-primary-color); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0;">
+                      {{ userInfo.username.charAt(0).toUpperCase() }}
+                    </div>
+                    <div style="min-width: 0;">
+                      <div style="font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.3;">{{ userInfo.username }}</div>
+                      <n-tag :type="userInfo.role === 'admin' ? 'warning' : 'info'" size="tiny" :bordered="false" round>{{ roleLabelMap[userInfo.role] || userInfo.role }}</n-tag>
+                    </div>
+                  </n-space>
+                </div>
+                <n-button block quaternary size="small" @click="handleLogout">退出登录</n-button>
+              </div>
             </n-layout-sider>
             <n-layout style="padding: 16px">
               <n-alert
@@ -84,7 +99,7 @@
 </template>
 
 <script setup>
-import {computed, h, reactive, ref} from "vue";
+import {computed, h, reactive, ref, provide, watch} from "vue";
 import {
   darkTheme,
   NAlert,
@@ -102,15 +117,56 @@ import {
   NSpace,
   useOsTheme
 } from "naive-ui";
-import {RouterLink} from "vue-router";
+import {RouterLink, useRouter} from "vue-router";
 import {useRequest} from "vue-request";
 import axios from "axios";
 import {APISRV} from "@/global.js";
+import {getToken, removeToken, isLoggedIn, getUserInfo, setUserInfo, removeUserInfo} from "@/auth.js";
 import hljs from 'highlight.js/lib/core'
+
+const router = useRouter()
+
+axios.interceptors.request.use(config => {
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+axios.interceptors.response.use(
+  resp => resp,
+  error => {
+    if (error?.response?.status === 401) {
+      removeToken()
+      router.replace('/login')
+    }
+    return Promise.reject(error)
+  }
+)
 
 const osThemeRef = useOsTheme();
 let theme = computed(() => osThemeRef.value === "dark" ? darkTheme : null);
 const message = console;
+
+const roleLabelMap = {admin: '管理员', readonly: '只读', school_w: '校写入', grade_w: '级写入', class_w: '班写入'}
+const userInfo = ref(getUserInfo())
+
+// 如果有 token 但没有 userInfo，从 API 获取
+if (isLoggedIn() && !userInfo.value.username) {
+  axios.get(`${APISRV}/web/auth/me`)
+    .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
+    .catch(() => {})
+}
+
+// 路由变化时刷新 userInfo（登录后跳转时触发）
+watch(() => router.currentRoute.value.path, () => {
+  if (isLoggedIn()) {
+    axios.get(`${APISRV}/web/auth/me`)
+      .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
+      .catch(() => {})
+  }
+})
 
 function pad(n) {
   return n.toString().padStart(2, '0');
@@ -259,6 +315,18 @@ let menuOptions = ref(
               { default: () => "总览" }
             ),
             key: "go-back-home"
+        },
+        {
+            label: () => h(
+              RouterLink,
+              {
+                to: {
+                  name: "Users"
+                }
+              },
+              { default: () => "用户管理" }
+            ),
+            key: "users"
         }
     ]
 );
@@ -391,7 +459,20 @@ useRequest(
     }
 );
 
+// 暴露刷新菜单方法给子组件
+const refreshMenu = () => {
+  getMenu().then(updateMenuFromResponse).catch(e => console.error('[menu] 刷新失败', e));
+};
+provide('refreshMenu', refreshMenu);
+
 let activeKey =  ref(null), collapsed = ref(false)
+
+function handleLogout() {
+  removeToken()
+  removeUserInfo()
+  userInfo.value = {}
+  router.replace('/login')
+}
 </script>
 
 <style scoped>
