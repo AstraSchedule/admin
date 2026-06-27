@@ -25,7 +25,7 @@ import {
 } from 'naive-ui'
 import {computed, h, reactive, ref} from 'vue'
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 import {useRequest} from 'vue-request'
 import {useRoute} from 'vue-router'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
@@ -196,7 +196,7 @@ async function okay(password) {
   try {
     const payload = buildPayload()
     await confirmAction(password, (cfg) =>
-      axios.put(`${APISRV}/web/config/${school.value}/${grade.value}/timetable`, payload, cfg)
+      axios.put(`${getAPISRV()}/web/config/${school.value}/${grade.value}/timetable`, payload, cfg)
     )
     messages.success('服务端说行')
     showModal.value = false
@@ -212,7 +212,7 @@ async function okay(password) {
 
 const getTimetable = () => {
   return Promise.resolve(
-    axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/timetable`)
+    axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/timetable`)
   )
 }
 

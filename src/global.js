@@ -8,4 +8,10 @@ export function setServer(url) {
   localStorage.setItem(SERVER_KEY, url)
 }
 
-export const APISRV = getServer()
+export function getAPISRV() {
+  const url = getServer()
+  if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+    return 'https://' + url
+  }
+  return url
+}

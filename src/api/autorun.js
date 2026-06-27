@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 
 // 伪数据 API：自动任务（支持分类内容与多选生效）
 // 合同：所有函数返回 Promise，并在 120-200ms 之间模拟延迟
@@ -109,7 +109,7 @@ function buildScopeTreeFromMenu(menu) {
 
 export async function fetchScopeTree() {
   if (scopeTreeCache) return { data: scopeTreeCache }
-  const resp = await axios.get(`${APISRV}/web/menu`)
+  const resp = await axios.get(`${getAPISRV()}/web/menu`)
   const payload = resp?.data?.data || []
   scopeTreeCache = buildScopeTreeFromMenu(payload)
   return { data: scopeTreeCache }
@@ -162,7 +162,7 @@ const store = [
 ]
 
 export async function listTasks() {
-  const resp = await axios.get(`${APISRV}/web/autorun`)
+  const resp = await axios.get(`${getAPISRV()}/web/autorun`)
   const payload = resp?.data
   const arr = Array.isArray(payload?.data) ? payload.data : []
   const data = arr.map((t) => {
@@ -184,7 +184,7 @@ export async function listTasks() {
 
 export async function getTask(id) {
   try {
-    const resp = await axios.get(`${APISRV}/web/autorun/hash/${id}`)
+    const resp = await axios.get(`${getAPISRV()}/web/autorun/hash/${id}`)
     const d = resp?.data?.data || resp?.data
     if (!d) throw new Error('Empty')
     const scope = [d.scope].flat().filter(Boolean)
@@ -219,7 +219,7 @@ export async function getTask(id) {
 
 export async function saveAutorun(payload, password){
   if (payload?.type === AutorunType.COMPENSATION){
-    const resp = await axios.put(`${APISRV}/web/autorun/compensation`, payload, {
+    const resp = await axios.put(`${getAPISRV()}/web/autorun/compensation`, payload, {
       auth: {
         username: 'ElectronClassSchedule',
         password
@@ -228,7 +228,7 @@ export async function saveAutorun(payload, password){
     return resp?.data
   }
   if (payload?.type === AutorunType.TIMETABLE) {
-    const resp = await axios.put(`${APISRV}/web/autorun/timetable`, payload, {
+    const resp = await axios.put(`${getAPISRV()}/web/autorun/timetable`, payload, {
       auth: {
         username: 'ElectronClassSchedule',
         password
@@ -237,7 +237,7 @@ export async function saveAutorun(payload, password){
     return resp?.data
   }
   if (payload?.type === AutorunType.SCHEDULE) {
-    const resp = await axios.put(`${APISRV}/web/autorun/schedule`, payload, {
+    const resp = await axios.put(`${getAPISRV()}/web/autorun/schedule`, payload, {
       auth: {
         username: 'ElectronClassSchedule',
         password
@@ -246,7 +246,7 @@ export async function saveAutorun(payload, password){
     return resp?.data
   }
   if (payload?.type === AutorunType.ALL) {
-    const resp = await axios.put(`${APISRV}/web/autorun/all`, payload, {
+    const resp = await axios.put(`${getAPISRV()}/web/autorun/all`, payload, {
       auth: {
         username: 'ElectronClassSchedule',
         password
@@ -280,7 +280,7 @@ export function summarizeContent(task) {
 
 export async function fetchClassScheduleTemplateByWeekday({ school, grade, cls, weekday }) {
   try {
-    const resp = await axios.get(`${APISRV}/web/config/${school}/${grade}/${cls}/schedule`)
+    const resp = await axios.get(`${getAPISRV()}/web/config/${school}/${grade}/${cls}/schedule`)
     const data = resp?.data || {}
     const days = Array.isArray(data.daily_class) ? data.daily_class : []
     const day = days[weekday] || {classList: [], timetable: ''}
@@ -298,7 +298,7 @@ export async function fetchClassScheduleTemplateByWeekday({ school, grade, cls, 
 }
 
 export async function fetchTimetableOptions(school, grade) {
-  const resp = await axios.get(`${APISRV}/web/config/${school}/${grade}/timetable/options`)
+  const resp = await axios.get(`${getAPISRV()}/web/config/${school}/${grade}/timetable/options`)
   const list = Array.isArray(resp?.data?.options) ? resp.data.options : []
   const options = list.map(it => ({ label: it.label, value: it.value, need: it.need }))
   const needMap = new Map(options.map(o => [o.label, Number(o.need) || 0]))
@@ -306,7 +306,7 @@ export async function fetchTimetableOptions(school, grade) {
 }
 
 export async function fetchSubjectsOptions(school, grade) {
-  const resp = await axios.get(`${APISRV}/web/config/${school}/${grade}/subjects/options`)
+  const resp = await axios.get(`${getAPISRV()}/web/config/${school}/${grade}/subjects/options`)
   const list = Array.isArray(resp?.data?.options) ? resp.data.options : []
   const options = list.map(it => ({ label: it.label, value: it.value }))
   return { options }
@@ -315,7 +315,7 @@ export async function fetchSubjectsOptions(school, grade) {
 export async function fetchCompByHoliday(yyyyMmDd) {
   try {
     const [y,m,d] = String(yyyyMmDd).split('-')
-    const resp = await axios.get(`${APISRV}/web/autorun/compensation/holiday/${y}/${m}/${d}`)
+    const resp = await axios.get(`${getAPISRV()}/web/autorun/compensation/holiday/${y}/${m}/${d}`)
     return { data: resp?.data }
   } catch (e) {
     console.warn('[autorun] fetchCompByHoliday error', e)
@@ -326,7 +326,7 @@ export async function fetchCompByHoliday(yyyyMmDd) {
 export async function fetchCompByWorkday(yyyyMmDd) {
   try {
     const [y,m,d] = String(yyyyMmDd).split('-')
-    const resp = await axios.get(`${APISRV}/web/autorun/compensation/workday/${y}/${m}/${d}`)
+    const resp = await axios.get(`${getAPISRV()}/web/autorun/compensation/workday/${y}/${m}/${d}`)
     return { data: resp?.data }
   } catch (e) {
     console.warn('[autorun] fetchCompByWorkday error', e)
@@ -336,7 +336,7 @@ export async function fetchCompByWorkday(yyyyMmDd) {
 
 export async function fetchCompYearPairs(year) {
   try {
-    const resp = await axios.get(`${APISRV}/web/autorun/compensation/year/${year}`)
+    const resp = await axios.get(`${getAPISRV()}/web/autorun/compensation/year/${year}`)
     const pairs = Array.isArray(resp?.data?.pairs) ? resp.data.pairs : []
     return { data: { year: resp?.data?.year ?? year, pairs } }
   } catch (e) {

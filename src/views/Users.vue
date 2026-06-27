@@ -5,7 +5,7 @@ import {
 } from 'naive-ui'
 import {useRequest} from 'vue-request'
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 import {listUsers, createUser, updateUser, deleteUser, verifyPassword} from '@/api/auth.js'
 
 const message = useMessage()
@@ -28,7 +28,7 @@ const editId = ref(null)
 const form = ref({username: '', password: '', role: 'class_w', scope: '', must_change_pwd: true, must_change_username: false})
 let skipScopeReset = false
 
-axios.get(`${APISRV}/web/structure`).then(r => { rawScopeTree.value = r.data || [] }).catch(() => {})
+axios.get(`${getAPISRV()}/web/structure`).then(r => { rawScopeTree.value = r.data || [] }).catch(() => {})
 
 const {loading: listLoading, run: fetchUsers} = useRequest(listUsers, {
   manual: false,

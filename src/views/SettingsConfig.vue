@@ -5,7 +5,7 @@ import {
 } from 'naive-ui'
 import { reactive, ref, computed } from 'vue'
 import axios from 'axios'
-import { APISRV } from '@/global.js'
+import { getAPISRV } from '@/global.js'
 import { useRequest } from 'vue-request'
 import { useRoute } from 'vue-router'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
@@ -91,7 +91,7 @@ const putSettings = (cfg) => {
   const payload = buildPayload()
   return Promise.resolve(
     axios.put(
-      `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/settings`,
+      `${getAPISRV()}/web/config/${school.value}/${grade.value}/${cls.value}/settings`,
       payload,
       cfg
     )
@@ -113,7 +113,7 @@ function onPwdConfirm(password){
 
 const getSettings = () => {
   return Promise.resolve(
-    axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/settings`)
+    axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/${cls.value}/settings`)
   )
 }
 

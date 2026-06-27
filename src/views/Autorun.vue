@@ -4,7 +4,7 @@ import {NButton, NCard, NDataTable, NSpace, NTag, useMessage} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {useRouter} from 'vue-router'
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 import {AutorunType, getAutorunTypeLabel, listTasks, summarizeContent} from '@/api/autorun.js'
 import ScopeTags from '@/components/ScopeTags.vue'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
@@ -83,7 +83,7 @@ async function doDelete(password) {
   deleting.value = true
   try {
     await confirmAction(password, (cfg) =>
-      axios.delete(`${APISRV}/web/autorun/${deleteId.value}`, cfg)
+      axios.delete(`${getAPISRV()}/web/autorun/${deleteId.value}`, cfg)
     )
     message.success('已删除')
     showDelete.value = false

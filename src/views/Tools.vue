@@ -6,7 +6,7 @@ import { useRequest } from 'vue-request'
 import { useRouter } from 'vue-router'
 import { fullExport, fullImport } from '@/api/backup.js'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
-import { APISRV } from '../global.js'
+import { getAPISRV } from '../global.js'
 
 const messages = useMessage()
 
@@ -24,7 +24,7 @@ const copyForm = reactive({
   toClass: ''
 })
 
-const getStructure = () => axios.get(`${APISRV}/web/structure`)
+const getStructure = () => axios.get(`${getAPISRV()}/web/structure`)
 useRequest(getStructure, {
   initialData: [],
   onSuccess: (response) => {
@@ -94,7 +94,7 @@ async function doCopyConfig() {
   copyLoading.value = true
   try {
     await axios.post(
-      `${APISRV}/web/config/copy`,
+      `${getAPISRV()}/web/config/copy`,
       {
         from: {
           school: copyForm.fromSchool,

@@ -3,7 +3,7 @@ import {computed, reactive, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useRequest} from 'vue-request'
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 import {
   NButton,
   NCard,
@@ -389,7 +389,7 @@ async function confirmSave(pwd) {
     }
     // 编辑：先删旧再提交新规则
     if (isEdit.value && form.id) {
-      await confirmAction(pwd, (cfg) => axios.delete(`${APISRV}/web/autorun/${form.id}`, cfg))
+      await confirmAction(pwd, (cfg) => axios.delete(`${getAPISRV()}/web/autorun/${form.id}`, cfg))
     }
     await saveAutorun(payload, pwd)
     message.success('已保存')

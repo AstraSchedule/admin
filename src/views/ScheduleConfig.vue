@@ -13,7 +13,7 @@ import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue';
 import { verifyPassword, confirmAction } from '@/api/auth.js'
 import {computed, h, reactive, ref} from "vue";
 import axios from "axios";
-import {APISRV} from "@/global.js";
+import {getAPISRV} from "@/global.js";
 import {useRequest} from "vue-request";
 import {useRoute} from "vue-router";
 
@@ -62,7 +62,7 @@ async function onPwdConfirm(password) {
       }))
     }
     await confirmAction(password, (cfg) =>
-      axios.put(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`, payload, cfg)
+      axios.put(`${getAPISRV()}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`, payload, cfg)
     )
     const messages = useMessage();
     messages.success("服务端说行")
@@ -78,9 +78,9 @@ async function onPwdConfirm(password) {
   }
 }
 
-const getSchedule = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`);
-const getOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/timetable/options`);
-const getSubjectsOptions = () => axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/subjects/options`);
+const getSchedule = () => axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/${cls.value}/schedule`);
+const getOptions = () => axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/timetable/options`);
+const getSubjectsOptions = () => axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/subjects/options`);
 
 useRequest(getSchedule, {
   refreshDeps: [school, grade, cls],

@@ -3,7 +3,7 @@ import {NButton, NCard, NCode, NFlex, NForm, NFormItem, NInput, NPopconfirm, NSt
 import {computed, reactive, ref} from "vue";
 import {zip} from "@/utils.js";
 import axios from "axios";
-import {APISRV} from "@/global.js";
+import {getAPISRV} from "@/global.js";
 import {useRequest} from "vue-request";
 import {useRoute} from "vue-router";
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue';
@@ -39,7 +39,7 @@ function submit() {
 const putSubjects = (password) => {
     return Promise.resolve(
         axios.put(
-            `${APISRV}/web/config/${school.value}/${grade.value}/subjects`,
+            `${getAPISRV()}/web/config/${school.value}/${grade.value}/subjects`,
             dynamicForm,
             {
                 auth: {
@@ -79,7 +79,7 @@ function onPwdConfirm(password) {
 }
 
 const getSubjects = () => {
-  return Promise.resolve(axios.get(`${APISRV}/web/config/${school.value}/${grade.value}/subjects`));
+  return Promise.resolve(axios.get(`${getAPISRV()}/web/config/${school.value}/${grade.value}/subjects`));
 }
 
 useRequest(

@@ -1,11 +1,11 @@
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 export {fetchScopeTree, flattenScope} from '@/api/autorun.js'
 
 export async function listCountdown(scope) {
   const url = scope
-    ? `${APISRV}/web/countdown?scope=${encodeURIComponent(scope)}`
-    : `${APISRV}/web/countdown`
+    ? `${getAPISRV()}/web/countdown?scope=${encodeURIComponent(scope)}`
+    : `${getAPISRV()}/web/countdown`
   const resp = await axios.get(url)
   const arr = Array.isArray(resp?.data?.data) ? resp.data.data : []
   return {
@@ -19,7 +19,7 @@ export async function listCountdown(scope) {
 }
 
 export async function getCountdown(id) {
-  const resp = await axios.get(`${APISRV}/web/countdown/${id}`)
+  const resp = await axios.get(`${getAPISRV()}/web/countdown/${id}`)
   const d = resp?.data?.data
   if (!d || Array.isArray(d)) return {data: null}
   return {
@@ -32,7 +32,7 @@ export async function getCountdown(id) {
 }
 
 export async function saveCountdown(payload, password) {
-  return axios.put(`${APISRV}/web/countdown`, payload, {
+  return axios.put(`${getAPISRV()}/web/countdown`, payload, {
     auth: {
       username: 'ElectronClassSchedule',
       password
@@ -41,7 +41,7 @@ export async function saveCountdown(payload, password) {
 }
 
 export async function deleteCountdown(id, password) {
-  return axios.delete(`${APISRV}/web/countdown/${id}`, {
+  return axios.delete(`${getAPISRV()}/web/countdown/${id}`, {
     auth: {
       username: 'ElectronClassSchedule',
       password

@@ -4,7 +4,7 @@ import {
   NButton, NCard, NEmpty, NInput, NModal, NSpace, NText, useMessage
 } from 'naive-ui'
 import axios from 'axios'
-import {APISRV} from '@/global.js'
+import {getAPISRV} from '@/global.js'
 import {createSchool, deleteSchool, createGrade, deleteGrade, createClass, deleteClass} from '@/api/structure.js'
 import {verifyPassword} from '@/api/auth.js'
 
@@ -13,7 +13,7 @@ const tree = ref([])
 
 async function refreshTree() {
   try {
-    const resp = await axios.get(`${APISRV}/web/structure`)
+    const resp = await axios.get(`${getAPISRV()}/web/structure`)
     tree.value = resp.data || []
   } catch (e) {
     tree.value = []

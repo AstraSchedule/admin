@@ -120,7 +120,7 @@ import {
 import {RouterLink, useRouter} from "vue-router";
 import {useRequest} from "vue-request";
 import axios from "axios";
-import {APISRV} from "@/global.js";
+import {getAPISRV} from "@/global.js";
 import {getToken, removeToken, isLoggedIn, getUserInfo, setUserInfo, removeUserInfo} from "@/auth.js";
 import hljs from 'highlight.js/lib/core'
 
@@ -154,7 +154,7 @@ const userInfo = ref(getUserInfo())
 
 // 如果有 token 但没有 userInfo，从 API 获取
 if (isLoggedIn() && !userInfo.value.username) {
-  axios.get(`${APISRV}/web/auth/me`)
+  axios.get(`${getAPISRV()}/web/auth/me`)
     .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
     .catch(() => {})
 }
@@ -162,7 +162,7 @@ if (isLoggedIn() && !userInfo.value.username) {
 // 路由变化时刷新 userInfo（登录后跳转时触发）
 watch(() => router.currentRoute.value.path, () => {
   if (isLoggedIn()) {
-    axios.get(`${APISRV}/web/auth/me`)
+    axios.get(`${getAPISRV()}/web/auth/me`)
       .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
       .catch(() => {})
   }
@@ -332,7 +332,7 @@ let menuOptions = ref(
 );
 
 // 直接请求，无需 setTimeout 包装，避免 Promise 嵌套潜在问题
-const getMenu = () => axios.get(`${APISRV}/web/menu`);
+const getMenu = () => axios.get(`${getAPISRV()}/web/menu`);
 
 function resolveMenuItem(menuItem) {
     if (!menuItem) return null;
@@ -407,7 +407,7 @@ async function submitInitServer() {
     const encodedGrade = encodeURIComponent(initForm.grade);
     const encodedCls = encodeURIComponent(initForm.cls);
     await axios.put(
-        `${APISRV}/${encodedSchool}/${encodedGrade}/${encodedCls}`,
+        `${getAPISRV()}/${encodedSchool}/${encodedGrade}/${encodedCls}`,
         payload,
         {
           auth: {
