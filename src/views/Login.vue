@@ -1,19 +1,31 @@
 <script setup>
-import {ref} from 'vue'
+import {ref, computed} from 'vue'
 import {useRouter} from 'vue-router'
 import {NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {login} from '@/api/auth.js'
 import {setToken, setUserInfo} from '@/auth.js'
+import {setServer, getServer} from '@/global.js'
 
 const router = useRouter()
 const message = useMessage()
 
-const form = ref({username: '', password: ''})
+const form = ref({server: getServer(), username: '', password: ''})
+
+// 自动补全建议
+const serverOptions = computed(() => {
+  const val = form.value.server
+  if (!val) return []
+  if (val.includes('.')) return []
+  return [
+    {label: val + '.getastra.cn', value: val + '.getastra.cn'},
+  ]
+})
 
 const {loading, run} = useRequest(() => login(form.value.username, form.value.password), {
   manual: true,
   onSuccess: (data) => {
+    setServer(form.value.server)
     setToken(data.token)
     setUserInfo(data.user || {})
     if (data.must_change_pwd) {
@@ -29,6 +41,10 @@ const {loading, run} = useRequest(() => login(form.value.username, form.value.pa
 })
 
 function handleLogin() {
+  if (!form.value.server) {
+    message.warning('请输入后端地址')
+    return
+  }
   if (!form.value.username || !form.value.password) {
     message.warning('请输入用户名和密码')
     return
@@ -42,6 +58,11 @@ function handleLogin() {
     <n-card title="星程课表 - 登录" class="login-card">
       <n-space vertical size="large">
         <n-form label-placement="left">
+          <n-form-item label="后端地址">
+            <n-input v-model:value="form.server" placeholder="例如：aaa-do" @keyup.enter="handleLogin">
+              <template #suffix>.getastra.cn</template>
+            </n-input>
+          </n-form-item>
           <n-form-item label="用户名">
             <n-input v-model:value="form.username" placeholder="请输入用户名" @keyup.enter="handleLogin"/>
           </n-form-item>
