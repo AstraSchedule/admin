@@ -11,7 +11,7 @@ export function setServer(url) {
 export function getAPISRV() {
   const url = getServer()
   if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-    return 'https://' + url
+    return (import.meta.env.DEV ? 'http://' : 'https://') + url
   }
   return url
 }

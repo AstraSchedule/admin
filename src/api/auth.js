@@ -3,7 +3,7 @@ import {getAPISRV} from '@/global.js'
 
 export async function login(username, password, server) {
   if (server && !server.startsWith('http://') && !server.startsWith('https://')) {
-    server = 'https://' + server
+    server = (import.meta.env.DEV ? 'http://' : 'https://') + server
   }
   const resp = await axios.post(`${server}/web/auth/login`, {username, password})
   return resp.data
