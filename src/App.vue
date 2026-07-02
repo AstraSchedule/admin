@@ -426,6 +426,7 @@ async function submitInitServer() {
     message.log('初始化成功，正在刷新菜单');
     showInitModal.value = false;
     initForm.password = '';
+    showInitServerEntry.value = false;
 
     const response = await getMenu();
     updateMenuFromResponse(response);
