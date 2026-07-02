@@ -67,7 +67,7 @@
     <n-modal v-model:show="showInitModal" preset="dialog" title="初始化服务器">
       <n-form label-placement="top">
         <n-form-item label="学校">
-          <n-input v-model:value="initForm.school" placeholder="例如：实验中学"/>
+          <n-input v-model:value="initForm.school" placeholder="例如：zh"/>
         </n-form-item>
         <n-form-item label="年级">
           <n-input v-model:value="initForm.grade" placeholder="例如：高一"/>

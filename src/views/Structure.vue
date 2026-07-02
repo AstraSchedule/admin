@@ -156,7 +156,7 @@ function doDelete(type, ...args) {
     :title="modalType === 'school' ? '新增学校' : modalType === 'grade' ? '新增年级' : '新增班级'">
     <n-form label-placement="left">
       <n-form-item :label="modalType === 'school' ? '学校名称' : modalType === 'grade' ? '年级名称' : '班级名称'">
-        <n-input v-model:value="modalName" :placeholder="modalType === 'school' ? '例如：实验中学' : modalType === 'grade' ? '例如：高一' : '例如：1班'" @keyup.enter="doCreate"/>
+        <n-input v-model:value="modalName" :placeholder="modalType === 'school' ? '例如：zh' : modalType === 'grade' ? '例如：2023' : '例如：1'" @keyup.enter="doCreate"/>
       </n-form-item>
     </n-form>
     <template #action>
