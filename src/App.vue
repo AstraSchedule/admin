@@ -159,12 +159,19 @@ if (isLoggedIn() && !userInfo.value.username) {
     .catch(() => {})
 }
 
-// 路由变化时刷新 userInfo（登录后跳转时触发）
+// 暴露刷新菜单方法给子组件
+const refreshMenu = () => {
+  getMenu().then(updateMenuFromResponse).catch(e => console.error('[menu] 刷新失败', e));
+};
+provide('refreshMenu', refreshMenu);
+
+// 路由变化时刷新 userInfo 和菜单（登录后跳转时触发）
 watch(() => router.currentRoute.value.path, () => {
   if (isLoggedIn()) {
     axios.get(`${getAPISRV()}/web/auth/me`)
       .then(resp => { setUserInfo(resp.data); userInfo.value = resp.data })
       .catch(() => {})
+    refreshMenu()
   }
 })
 
@@ -458,12 +465,6 @@ useRequest(
       }
     }
 );
-
-// 暴露刷新菜单方法给子组件
-const refreshMenu = () => {
-  getMenu().then(updateMenuFromResponse).catch(e => console.error('[menu] 刷新失败', e));
-};
-provide('refreshMenu', refreshMenu);
 
 let activeKey =  ref(null), collapsed = ref(false)
 
