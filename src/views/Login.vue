@@ -1,7 +1,7 @@
 <script setup>
 import {ref, computed} from 'vue'
 import {useRouter} from 'vue-router'
-import {NAutoComplete, NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage} from 'naive-ui'
+import {NAutoComplete, NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage, useOsTheme} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {login} from '@/api/auth.js'
 import {setToken, setUserInfo} from '@/auth.js'
@@ -9,6 +9,7 @@ import {setServer, getServer} from '@/global.js'
 
 const router = useRouter()
 const message = useMessage()
+const osTheme = useOsTheme()
 
 const form = ref({server: getServer(), username: '', password: ''})
 
@@ -59,7 +60,7 @@ function windowOpen(url) {
 </script>
 
 <template>
-  <div class="login-wrapper">
+  <div class="login-wrapper" :class="{ dark: osTheme === 'dark' }">
     <n-card title="星程课表 - 登录" class="login-card">
       <n-space vertical size="large">
         <n-form label-placement="left">
@@ -86,7 +87,10 @@ function windowOpen(url) {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: var(--n-color, #f5f5f5);
+  background: #f5f5f5;
+}
+.login-wrapper.dark {
+  background: #18181c;
 }
 .login-card {
   width: 400px;
