@@ -1,9 +1,13 @@
 <template>
-  <!-- 🤔 -->
   <n-config-provider :theme="theme" date-locale="dateZhCN" locale="zhCN" class="full" :hljs="hljs">
     <n-message-provider class="full">
       <n-dialog-provider class="full">
-        <n-space vertical class="full">
+        <!-- 登录页：不渲染侧栏 -->
+        <template v-if="isLoginPage">
+          <router-view></router-view>
+        </template>
+        <!-- 已登录：渲染侧栏布局 -->
+        <n-space v-else vertical class="full">
           <n-layout has-sider style="height: 100vh">
             <n-layout-sider
               bordered
@@ -126,6 +130,8 @@ import hljs from 'highlight.js/lib/core'
 
 const router = useRouter()
 
+const isLoginPage = computed(() => router.currentRoute.value.name === 'Login')
+
 axios.interceptors.request.use(config => {
   const token = getToken()
   if (token) {
@@ -137,7 +143,11 @@ axios.interceptors.request.use(config => {
 axios.interceptors.response.use(
   resp => resp,
   error => {
-    if (error?.response?.status === 401) {
+    const status = error?.response?.status
+    const url = error?.config?.url || ''
+    // verify-password 的 401 是密码错误，不是 token 过期，不触发退出
+    const isVerifyPwd = url.includes('/web/auth/verify-password')
+    if (status === 401 && !isVerifyPwd) {
       removeToken()
       router.replace('/login')
     }

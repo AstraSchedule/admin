@@ -106,6 +106,10 @@ const router = createRouter(
 )
 
 router.beforeEach((to, from, next) => {
+  if (to.name === 'Login' && isLoggedIn()) {
+    next('/')
+    return
+  }
   if (to.meta.noAuth) {
     next()
     return
