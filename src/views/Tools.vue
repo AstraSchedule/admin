@@ -1,5 +1,5 @@
 <script setup>
-import { NButton, NCard, NFlex, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NText, NRadioGroup, NRadioButton, NCheckbox, useMessage } from 'naive-ui'
+import { NButton, NCard, NFlex, NForm, NFormItem, NInput, NModal, NSelect, NSpace, NText, NRadioGroup, NRadioButton, useMessage } from 'naive-ui'
 import { computed, reactive, ref, watch } from 'vue'
 import axios from 'axios'
 import { useRequest } from 'vue-request'
@@ -136,7 +136,6 @@ const router = useRouter()
 const importFile = ref(null)
 const importFileInputRef = ref(null)
 const importMode = ref('overwrite')
-const importSelfHosted = ref(false)
 
 // 密码确认弹窗
 const showPwdModal = ref(false)
@@ -190,7 +189,7 @@ async function onPwdConfirm(password) {
       saveBlob(resp.data, name)
       messages.success('完整备份导出成功')
     } else if (pwdModalAction.value === 'import') {
-      const resp = await fullImport(importFile.value, password, importMode.value, importSelfHosted.value)
+      const resp = await fullImport(importFile.value, password, importMode.value)
       const msg = resp?.data?.message || '备份导入成功'
       const modeText = importMode.value === 'overwrite' ? '（覆盖重复数据）' : '（跳过重复数据）'
       messages.success(`${msg}${modeText}，建议刷新页面检查配置`)
@@ -275,7 +274,6 @@ async function onPwdConfirm(password) {
           <NRadioButton value="overwrite">覆盖（更新重复数据）</NRadioButton>
           <NRadioButton value="skip">跳过（保留重复数据）</NRadioButton>
         </NRadioGroup>
-        <NCheckbox v-model:checked="importSelfHosted">从自部署备份恢复</NCheckbox>
         <NButton type="warning" :disabled="!importFile" @click="openImportModal">导入还原</NButton>
       </NSpace>
     </NCard>

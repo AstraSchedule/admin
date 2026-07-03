@@ -26,13 +26,10 @@ export async function fullExport(password) {
   })
 }
 
-export async function fullImport(file, password, mode = 'overwrite', selfHosted = false) {
+export async function fullImport(file, password, mode = 'overwrite') {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('mode', mode)
-  if (selfHosted) {
-    formData.append('source', 'self-hosted')
-  }
   return axios.post(`${getAPISRV()}/web/backup/full-import`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
