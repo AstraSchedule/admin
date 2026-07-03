@@ -52,6 +52,10 @@ function handleLogin() {
   }
   run()
 }
+
+function windowOpen(url) {
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -70,6 +74,7 @@ function handleLogin() {
           </n-form-item>
         </n-form>
         <n-button type="primary" block :loading="loading" @click="handleLogin">登录</n-button>
+        <n-button block @click="windowOpen('https://go.getastra.cn')">注册</n-button>
       </n-space>
     </n-card>
   </div>
