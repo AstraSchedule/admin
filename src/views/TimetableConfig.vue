@@ -78,28 +78,38 @@ function ymdToTs(str) {
   return new Date(y, m - 1, d).getTime()
 }
 
+function segmentValue(segment) {
+  if (!segment.start || !segment.end) return undefined
+  if (segment.valueType === 'index') {
+    if (segment.index === '' || segment.index === null || Number.isNaN(segment.index)) return undefined
+    return Number(segment.index)
+  }
+  return segment.text || undefined
+}
+
+function buildSegmentMap(segments) {
+  const segMap = {}
+  for (const segment of segments) {
+    const value = segmentValue(segment)
+    if (value === undefined) continue
+    segMap[`${segment.start}-${segment.end}`] = value
+  }
+  return segMap
+}
+
+function parseDividerInput(input) {
+  return input.trim() === ''
+    ? []
+    : input.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+}
+
 function buildPayload() {
   const timetableObj = {}
   const dividerObj = {}
   for (const t of dynamicForm.timetables) {
     if (!t.name) continue
-    const segMap = {}
-    for (const s of t.segments) {
-      if (!s.start || !s.end) continue
-      const range = `${s.start}-${s.end}`
-      let val = null
-      if (s.valueType === 'index') {
-        if (s.index === '' || s.index === null || Number.isNaN(s.index)) continue
-        val = Number(s.index)
-      } else {
-        if (!s.text) continue
-        val = s.text
-      }
-      segMap[range] = val
-    }
-    timetableObj[t.name] = segMap
-    // divider 解析
-    dividerObj[t.name] = t.dividerInput.trim() === '' ? [] : t.dividerInput.split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x))
+    timetableObj[t.name] = buildSegmentMap(t.segments)
+    dividerObj[t.name] = parseDividerInput(t.dividerInput)
   }
   return {
     timetable: timetableObj,
@@ -271,15 +281,32 @@ const preview = computed(() => JSON.stringify(buildPayload(), null, 2))
 const expandedTimetables = ref([])
 
 // ---------- 自动填充与校验 ----------
-function normalizeTimetable(timetable, silent=false){
-  const segs = timetable.segments
-  // 只处理有合法 start 的段
+function collectValidSegments(segments) {
   const valid = []
-  for(const s of segs){
-    const sm = parseTime(s.start)
-    if(sm!==null){ valid.push({ seg:s, startM:sm }) }
+  for (const segment of segments) {
+    const startM = parseTime(segment.start)
+    if (startM !== null) valid.push({ seg: segment, startM })
   }
-  valid.sort((a,b)=>a.startM-b.startM)
+  valid.sort((a, b) => a.startM - b.startM)
+  return valid
+}
+
+function normalizeLessonIndexes(timetable, valid, silent) {
+  const lessonSegs = valid.filter(v => v.seg.valueType === 'index')
+  let changed = false
+  for (let i = 0; i < lessonSegs.length; i++) {
+    if (lessonSegs[i].seg.index !== i) {
+      lessonSegs[i].seg.index = i
+      changed = true
+    }
+  }
+  if (changed && !silent) {
+    messages.info(`作息 ${timetable.name} 课程序号已自动调整为 0~${lessonSegs.length-1}`)
+  }
+}
+
+function normalizeTimetable(timetable, silent=false){
+  const valid = collectValidSegments(timetable.segments)
   if(valid.length===0) return { valid:true }
   if(valid[0].startM !== 0){
     valid[0].startM = 0
@@ -305,17 +332,7 @@ function normalizeTimetable(timetable, silent=false){
   if(!ok && !silent) messages.error(errMsg)
   // ---- 课程序号规范化 ----
   if(ok){
-    const lessonSegs = valid.filter(v=>v.seg.valueType==='index')
-    let changed = false
-    for(let i=0;i<lessonSegs.length;i++){
-      if(lessonSegs[i].seg.index !== i){
-        lessonSegs[i].seg.index = i
-        changed = true
-      }
-    }
-    if(changed && !silent){
-      messages.info(`作息 ${timetable.name} 课程序号已自动调整为 0~${lessonSegs.length-1}`)
-    }
+    normalizeLessonIndexes(timetable, valid, silent)
   }
   return { valid: ok, message: errMsg }
 }
