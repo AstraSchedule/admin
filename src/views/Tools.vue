@@ -261,7 +261,9 @@ async function onPwdConfirm(password) {
           <NButton @click="pickImportFile">选择备份文件</NButton>
           <NText depth="3">{{ importFile ? importFile.name : '未选择文件' }}</NText>
         </NFlex>
+        <label for="backup-import-file" style="display: none">选择备份文件</label>
         <input
+          id="backup-import-file"
           ref="importFileInputRef"
           type="file"
           accept=".json,application/json"
