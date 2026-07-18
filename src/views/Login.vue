@@ -29,6 +29,7 @@ const {loading, run} = useRequest(() => login(form.value.username, form.value.pa
 })
 
 function handleLogin() {
+  if (loading.value) return
   if (!form.value.username || !form.value.password) {
     message.warning('请输入用户名和密码')
     return
@@ -43,13 +44,13 @@ function handleLogin() {
       <n-space vertical size="large">
         <n-form label-placement="left">
           <n-form-item label="用户名">
-            <n-input v-model:value="form.username" placeholder="请输入用户名" @keyup.enter="handleLogin"/>
+            <n-input v-model:value="form.username" :disabled="loading" placeholder="请输入用户名" @keyup.enter="handleLogin"/>
           </n-form-item>
           <n-form-item label="密码">
-            <n-input v-model:value="form.password" type="password" show-password-on="click" placeholder="请输入密码" @keyup.enter="handleLogin"/>
+            <n-input v-model:value="form.password" :disabled="loading" type="password" show-password-on="click" placeholder="请输入密码" @keyup.enter="handleLogin"/>
           </n-form-item>
         </n-form>
-        <n-button type="primary" block :loading="loading" @click="handleLogin">登录</n-button>
+        <n-button type="primary" block :loading="loading" :disabled="loading" @click="handleLogin">登录</n-button>
       </n-space>
     </n-card>
   </div>
