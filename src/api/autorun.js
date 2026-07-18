@@ -220,37 +220,25 @@ export async function getTask(id) {
 export async function saveAutorun(payload, password){
   if (payload?.type === AutorunType.COMPENSATION){
     const resp = await axios.put(`${APISRV}/web/autorun/compensation`, payload, {
-      auth: {
-        username: 'ElectronClassSchedule',
-        password
-      }
+      headers: { 'X-Verify-Password': password }
     })
     return resp?.data
   }
   if (payload?.type === AutorunType.TIMETABLE) {
     const resp = await axios.put(`${APISRV}/web/autorun/timetable`, payload, {
-      auth: {
-        username: 'ElectronClassSchedule',
-        password
-      }
+      headers: { 'X-Verify-Password': password }
     })
     return resp?.data
   }
   if (payload?.type === AutorunType.SCHEDULE) {
     const resp = await axios.put(`${APISRV}/web/autorun/schedule`, payload, {
-      auth: {
-        username: 'ElectronClassSchedule',
-        password
-      }
+      headers: { 'X-Verify-Password': password }
     })
     return resp?.data
   }
   if (payload?.type === AutorunType.ALL) {
     const resp = await axios.put(`${APISRV}/web/autorun/all`, payload, {
-      auth: {
-        username: 'ElectronClassSchedule',
-        password
-      }
+      headers: { 'X-Verify-Password': password }
     })
     return resp?.data
   }
