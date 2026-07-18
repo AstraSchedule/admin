@@ -108,10 +108,7 @@ async function doCopyConfig() {
         }
       },
       {
-        auth: {
-          username: 'ElectronClassSchedule',
-          password: copyPwd.value
-        }
+        headers: { 'X-Verify-Password': copyPwd.value }
       }
     )
     messages.success('复制完成')
