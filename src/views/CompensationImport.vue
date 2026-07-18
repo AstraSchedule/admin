@@ -1,14 +1,13 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRequest } from 'vue-request'
 import { useMessage, NButton, NCard, NForm, NFormItem, NInputNumber, NSelect } from 'naive-ui'
 import { AutorunType, fetchCompYearPairs, fetchScopeTree, flattenScope, saveAutorun } from '@/api/autorun.js'
-import { normalizeScopes } from '@/utils/scope.js'
+import { applyDisabledToScopeOptions, normalizeScopes } from '@/utils/scope.js'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
 
 const message = useMessage()
 
-// 作用域
 const scopeSelectOptions = ref([])
 useRequest(fetchScopeTree, {
   manual: false,
@@ -21,6 +20,11 @@ const importYear = ref(new Date().getFullYear())
 const importAllScope = ref(true)
 const importing = ref(false)
 const showPwd = ref(false)
+
+// 必须用 computed：scope 树是异步拉的，setup 里一次性 map 会永远 NoData
+const computedScopeOptions = computed(() =>
+  applyDisabledToScopeOptions(scopeSelectOptions.value, scope.value)
+)
 
 function onScopeChange(v) {
   scope.value = normalizeScopes(v)
@@ -91,13 +95,6 @@ async function doImport(password) {
     importing.value = false
   }
 }
-
-const disabledOptions = new Set(scope.value)
-const computedScopeOptions = scopeSelectOptions.value.map(o => ({
-  label: o.label,
-  value: o.value,
-  disabled: disabledOptions.has(o.value)
-}))
 </script>
 
 <template>
