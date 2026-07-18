@@ -5,7 +5,7 @@ import {NAutoComplete, NButton, NCard, NForm, NFormItem, NInput, NSpace, useMess
 import {useRequest} from 'vue-request'
 import {login} from '@/api/auth.js'
 import {setToken, setUserInfo} from '@/auth.js'
-import {getServer} from '@/global.js'
+import {getServer, setServer} from '@/global.js'
 
 const router = useRouter()
 const message = useMessage()
@@ -27,6 +27,7 @@ const serverOptions = computed(() => {
 const {loading, run} = useRequest(() => login(form.value.username, form.value.password, form.value.server), {
   manual: true,
   onSuccess: (data) => {
+    setServer(form.value.server)
     setToken(data.token)
     setUserInfo(data.user || {})
     if (data.must_change_pwd) {
@@ -42,6 +43,7 @@ const {loading, run} = useRequest(() => login(form.value.username, form.value.pa
 })
 
 function handleLogin() {
+  if (loading.value) return
   if (!form.value.username || !form.value.password) {
     message.warning('请输入用户名和密码')
     return
@@ -60,17 +62,17 @@ function windowOpen(url) {
       <n-space vertical size="large">
         <n-form label-placement="left">
           <n-form-item label="后端地址">
-            <n-auto-complete v-model:value="form.server" :options="serverOptions" placeholder="例如：aaa-do.getastra.cn" @keyup.enter="handleLogin"/>
+            <n-auto-complete v-model:value="form.server" :disabled="loading" :options="serverOptions" placeholder="例如：aaa-do.getastra.cn" @keyup.enter="handleLogin"/>
           </n-form-item>
           <n-form-item label="用户名">
-            <n-input v-model:value="form.username" placeholder="请输入用户名" @keyup.enter="handleLogin"/>
+            <n-input v-model:value="form.username" :disabled="loading" placeholder="请输入用户名" @keyup.enter="handleLogin"/>
           </n-form-item>
           <n-form-item label="密码">
-            <n-input v-model:value="form.password" type="password" show-password-on="click" placeholder="请输入密码" @keyup.enter="handleLogin"/>
+            <n-input v-model:value="form.password" :disabled="loading" type="password" show-password-on="click" placeholder="请输入密码" @keyup.enter="handleLogin"/>
           </n-form-item>
         </n-form>
-        <n-button type="primary" block :loading="loading" @click="handleLogin">登录</n-button>
-        <n-button block @click="windowOpen('https://go.getastra.cn')">注册</n-button>
+        <n-button type="primary" block :loading="loading" :disabled="loading" @click="handleLogin">登录</n-button>
+        <n-button block :disabled="loading" @click="windowOpen('https://go.getastra.cn')">注册</n-button>
       </n-space>
     </n-card>
   </div>
