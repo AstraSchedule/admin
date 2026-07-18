@@ -1,11 +1,11 @@
 <script setup>
-import {ref, computed} from 'vue'
+import {computed, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {NAutoComplete, NButton, NCard, NForm, NFormItem, NInput, NSpace, useMessage, useOsTheme} from 'naive-ui'
 import {useRequest} from 'vue-request'
 import {login} from '@/api/auth.js'
 import {setToken, setUserInfo} from '@/auth.js'
-import {setServer, getServer} from '@/global.js'
+import {getServer} from '@/global.js'
 
 const router = useRouter()
 const message = useMessage()
@@ -27,7 +27,6 @@ const serverOptions = computed(() => {
 const {loading, run} = useRequest(() => login(form.value.username, form.value.password, form.value.server), {
   manual: true,
   onSuccess: (data) => {
-    setServer(form.value.server)
     setToken(data.token)
     setUserInfo(data.user || {})
     if (data.must_change_pwd) {
@@ -43,10 +42,6 @@ const {loading, run} = useRequest(() => login(form.value.username, form.value.pa
 })
 
 function handleLogin() {
-  if (!form.value.server) {
-    message.warning('请输入后端地址')
-    return
-  }
   if (!form.value.username || !form.value.password) {
     message.warning('请输入用户名和密码')
     return

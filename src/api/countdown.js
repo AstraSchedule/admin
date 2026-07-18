@@ -33,18 +33,12 @@ export async function getCountdown(id) {
 
 export async function saveCountdown(payload, password) {
   return axios.put(`${getAPISRV()}/web/countdown`, payload, {
-    auth: {
-      username: 'ElectronClassSchedule',
-      password
-    }
+    headers: { 'X-Verify-Password': password }
   })
 }
 
 export async function deleteCountdown(id, password) {
   return axios.delete(`${getAPISRV()}/web/countdown/${id}`, {
-    auth: {
-      username: 'ElectronClassSchedule',
-      password
-    }
+    headers: { 'X-Verify-Password': password }
   })
 }

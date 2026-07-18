@@ -42,10 +42,7 @@ const putSubjects = (password) => {
             `${getAPISRV()}/web/config/${school.value}/${grade.value}/subjects`,
             dynamicForm,
             {
-                auth: {
-                    username: 'ElectronClassSchedule',
-                    password: password
-                }
+                headers: { 'X-Verify-Password': password }
             }
         )
     );

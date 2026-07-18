@@ -427,10 +427,7 @@ async function submitInitServer() {
         `${getAPISRV()}/${encodedSchool}/${encodedGrade}/${encodedCls}`,
         payload,
         {
-          auth: {
-            username: 'AstraSchedule',
-            password: initForm.password
-          }
+          headers: { 'X-Verify-Password': initForm.password }
         }
     );
     message.log('初始化成功，正在刷新菜单');
