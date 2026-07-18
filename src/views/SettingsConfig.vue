@@ -9,6 +9,7 @@ import { APISRV } from '@/global.js'
 import { useRequest } from 'vue-request'
 import { useRoute } from 'vue-router'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 
 const route = useRoute()
 const school = computed(() => route.params.school)
@@ -86,24 +87,25 @@ function submit(){ showModal.value = true }
 
 const messages = useMessage()
 
-const putSettings = (password) => {
+const putSettings = (cfg) => {
   const payload = buildPayload()
   return Promise.resolve(
     axios.put(
       `${APISRV}/web/config/${school.value}/${grade.value}/${cls.value}/settings`,
       payload,
-      { auth:{ username:'ElectronClassSchedule', password: password } }
+      cfg
     )
   )
 }
 
 function onPwdConfirm(password){
   pwdModalLoading.value = true
-  putSettings(password)
+  confirmAction(password, (cfg) => putSettings(cfg))
     .then(()=>{ messages.success('服务端说行'); showModal.value=false })
     .catch((error)=>{
       if(error.status===401) messages.error('你寻思寻思这密码它对吗？')
       else if(error.status===400) messages.error('码姿不对，删了重写！（服务端校验不通过）')
+      else if(error.status === 403) messages.error('无权访问：有些门总是关着的')
       else messages.error(`服务端看完天塌了（状态码：${error.status}）`)
     })
     .finally(()=>{ pwdModalLoading.value = false })

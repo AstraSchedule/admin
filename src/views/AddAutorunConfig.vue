@@ -34,6 +34,7 @@ import {
 } from '@/api/autorun.js'
 import {applyDisabledToScopeOptions, findNodeByValue, normalizeScopes, parseGradePairsFromScopes} from '@/utils/scope.js'
 import ConfirmPasswordModal from '@/components/ConfirmPasswordModal.vue'
+import { verifyPassword, confirmAction } from '@/api/auth.js'
 
 // ============================================================
 // 共用：作用域树
@@ -494,9 +495,7 @@ async function confirmSave(pwd) {
     }
     const payload = { type: form.type, scope: form.scope, priority: form.priority, content }
     if (isEdit.value && form.id) {
-      await axios.delete(`${APISRV}/web/autorun/${form.id}`, {
-        auth: {username: 'ElectronClassSchedule', password: pwd}
-      })
+      await confirmAction(pwd, (cfg) => axios.delete(`${APISRV}/web/autorun/${form.id}`, cfg))
     }
     await saveAutorun(payload, pwd)
     message.success('已保存')
@@ -506,6 +505,7 @@ async function confirmSave(pwd) {
     const status = e?.status || e?.response?.status
     if (status === 401) message.error('你寻思寻思这密码它对吗？')
     else if (status === 400) message.error('码姿不对，删了重写！（服务端校验不通过）')
+    else if(status === 403) message.error('无权访问：有些门总是关着的')
     else message.error('服务端看完天塌了（状态码：' + (status ?? '未知') + '）')
   } finally { saving.value = false }
 }
