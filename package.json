@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@vicons/ionicons5": "^0.12.0",
-    "axios": "1.13.5",
+    "axios": "1.19.0",
     "gsap": "^3.12.5",
     "highlight.js": "^11.11.1",
     "vue": "^3.5.12",
@@ -23,6 +23,13 @@
     "@vitejs/plugin-vue": "^6.0.0",
     "naive-ui": "^2.40.1",
     "vfonts": "^0.0.3",
-    "vite": "7.1.11"
+    "vite": "7.3.6"
+  },
+  "overrides": {
+    "rollup": "^4.59.0",
+    "picomatch": "^4.0.4",
+    "postcss": "^8.5.7",
+    "lodash-es": "^4.18.1",
+    "lodash": "^4.18.1"
   }
 }
