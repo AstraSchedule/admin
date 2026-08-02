@@ -15,6 +15,7 @@ import axios from 'axios';
 import {computed, h, reactive, ref} from "vue";
 import gsap from 'gsap';
 import {APISRV} from '../global.js'
+import {getToken} from '../auth.js'
 
 const isServerless = ref(false);
 const isInitialLoading = ref(true);
@@ -57,7 +58,7 @@ const columns = [
       sorter: (row1, row2) => row1.disconnect - row2.disconnect
   }
 ]
-const getStatistic = () => axios.get(`${APISRV}/web/statistic`);
+const getStatistic = () => axios.get(`${APISRV}/web/statistic`, { headers: { Authorization: `Bearer ${getToken()}` } });
 const getHitokoto = () => axios.get('https://v1.hitokoto.cn/');
 const refreshHitokoto = () => {
     hitokoto.value = { content: '', from: '' };
